@@ -3,7 +3,7 @@
 	<name>SearchPoint</name>
 	<comment></comment>
 	<projects>
-		<project>SearchPointCpp</project>
+		<project>SearchPointSrv</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

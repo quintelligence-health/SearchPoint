@@ -1,0 +1,11 @@
+# java
+*.class
+
+# eclipse
+.metadata
+
+# C/C++
+*.o
+
+# other directories
+Servers*
