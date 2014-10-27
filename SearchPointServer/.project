@@ -3,7 +3,6 @@
 	<name>SearchPointServer</name>
 	<comment></comment>
 	<projects>
-		<project>SearchPoint</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
