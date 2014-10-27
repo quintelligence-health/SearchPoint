@@ -1,3 +1,0 @@
-INDEX VERSION 1.127
-/home/lstopar/workspace/JSI/searchpoint/java/.metadata/.plugins/org.eclipse.jst.jsp.core/jspsearch/1553354823.index
-/SearchPointSrv/src

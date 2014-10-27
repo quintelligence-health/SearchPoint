@@ -1,7 +1,0 @@
-
-# glib specific properties
-glib.unicode.file = /home/lstopar/workspace/JSI/searchpoint/glib/bin/UnicodeDef.Bin
-glib.dmoz.file = /home/lstopar/workspace/JSI/searchpoint/DMoz.dat
-
-# BING search API
-bing.search.pikey = IWBf7jPfsFw7m2QrNM493NWYTYiJ0ynYXVejNWA6kkc

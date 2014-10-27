@@ -1,6 +1,0 @@
-package si.ijs.searchpointsrv.config;
-
-public class Configuration {
-
-	public static final String UNICODE_DEF_PATH = "/home/lstopar/workspace/JSI/searchpoint/glib/bin/UnicodeDef.Bin";
-}
