@@ -1,0 +1,47 @@
+# Define a variable for classpath
+CLASS_PATH = ../bin
+
+CC = g++
+CXXFLAGS = -std=c++0x -Wall -Wno-deprecated-declarations
+CXXFLAGS += -g -rdynamic -DTHREADED_SRV
+LDFLAGS += -fopenmp
+LIBS += -lrt -luuid
+
+JAVA_HOME = /usr/lib/jvm/java-8-oracle
+JAVA_INCLUDE = $(JAVA_HOME)/include
+JAVA_INCLUDE_OS = $(JAVA_INCLUDE)/linux
+
+SEARCH_POINT = /home/lstopar/workspace/JSI/searchpoint/aiutils/SearchPoint/SearchPointSrv
+
+LIBUV = $(SEARCH_POINT)/../../../libuv
+GLIB = $(SEARCH_POINT)/../../../glib
+GLIB_BASE = $(GLIB)/base/
+GLIB_NET = $(GLIB)/net/
+GLIB_MINE = $(GLIB)/mine/
+GLIB_MISC = $(GLIB)/misc/
+GLIB_THREAD = $(GLIB)/concurrent/
+
+STATIC_LIBS = $(GLIB)/glib.a $(SEARCH_POINT)/SearchPointLib.a
+INCLUDE = -I$(JAVA_INCLUDE) -I$(JAVA_INCLUDE_OS) -I$(SEARCH_POINT) -I$(GLIB_BASE) \
+			-I$(GLIB_NET) -I$(GLIB_THREAD) -I$(GLIB_MINE)
+
+# -I$(GLIB_BASE)   -I$(GLIB_MISC)  -I$(LIBUV) -I$(SEARCH_POINT)
+# $(GLIB_BASE)*.o $(GLIB_NET)*.o $(GLIB_MINE)*.o $(GLIB_MISC)/*.o $(GLIB_THREAD)/*.o $(SEARCH_POINT)/*.o
+
+# Define a virtual path for .class in the bin directory
+vpath %.class $(CLASS_PATH)
+
+all: libSearchPointJava.so
+	
+libSearchPointJava.so: si_ijs_searchpoint_SearchPoint.o
+	$(CC) -fPIC -shared -o $@ $< $(GLIB)/*.o $(SEARCH_POINT)/*.o $(LIBUV)/libuv.a $(INCLUDE) $(LDFLAGS) $(LIBS)
+	
+si_ijs_searchpoint_SearchPoint.o: si_ijs_searchpoint_SearchPoint.cpp si_ijs_searchpoint_SearchPoint.h
+	$(CC) -fPIC -c $(CXXFLAGS) $< $(INCLUDE) $(LDFLAGS) $(LIBS) 
+
+# $* matches the target filename without the extension
+#SearchPoint.h : SearchPoint.class
+#	javah -classpath $(CLASS_PATH) $*
+	
+clean:
+	rm si_ijs_searchpoint_SearchPoint.o libSearchPointJava.so

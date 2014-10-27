@@ -1,0 +1,6 @@
+package si.ijs.searchpointsrv.config;
+
+public class Configuration {
+
+	public static final String UNICODE_DEF_PATH = "WEB-INF/dbs/UnicodeDef.Bin";
+}

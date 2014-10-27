@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project>
+	<configuration id="cdt.managedbuild.toolchain.gnu.base.630377718" name="Default">
+		<extension point="org.eclipse.cdt.core.LanguageSettingsProvider">
+			<provider id="org.eclipse.cdt.managedbuilder.core.GCCBuildCommandParser">
+				<language id="org.eclipse.cdt.core.g++">
+					<resource project-relative-path="jni/si_ijs_searchpoint_SearchPoint.cpp">
+						<entry kind="includePath" name="/usr/lib/jvm/java-8-oracle/include"/>
+						<entry kind="includePath" name="/usr/lib/jvm/java-8-oracle/include/linux"/>
+						<entry kind="includePath" name="/SearchPointCpp">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="includePath" name="/glib/base">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="includePath" name="/glib/net">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="includePath" name="/glib/concurrent">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="includePath" name="/glib/mine">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="macro" name="THREADED_SRV" value=""/>
+						<entry kind="libraryFile" name="librt.a"/>
+						<entry kind="libraryFile" name="libuuid.a"/>
+					</resource>
+					<resource project-relative-path="jni/si_ijs_searchpoint_SearchPointJava.cpp">
+						<entry kind="includePath" name="/usr/lib/jvm/java-8-oracle/include"/>
+						<entry kind="includePath" name="/usr/lib/jvm/java-8-oracle/include/linux"/>
+						<entry kind="includePath" name="/SearchPointCpp">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="includePath" name="/glib/base">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="includePath" name="/glib/net">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="includePath" name="/glib/concurrent">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="includePath" name="/glib/mine">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="macro" name="THREADED_SRV" value=""/>
+						<entry kind="libraryFile" name="librt.a"/>
+						<entry kind="libraryFile" name="libuuid.a"/>
+					</resource>
+					<resource project-relative-path="jni/SearchPointJava.cpp">
+						<entry kind="includePath" name="/usr/lib/jvm/java-8-oracle/include"/>
+						<entry kind="includePath" name="/usr/lib/jvm/java-8-oracle/include/linux"/>
+						<entry kind="includePath" name="/SearchPointCpp">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="includePath" name="/glib/base">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="includePath" name="/glib/net">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="includePath" name="/glib/concurrent">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="includePath" name="/glib/mine">
+							<flag value="VALUE_WORKSPACE_PATH|RESOLVED"/>
+						</entry>
+						<entry kind="macro" name="THREADED_SRV" value=""/>
+						<entry kind="libraryFile" name="librt.a"/>
+						<entry kind="libraryFile" name="libuuid.a"/>
+					</resource>
+				</language>
+			</provider>
+		</extension>
+	</configuration>
+</project>

@@ -1,0 +1,7 @@
+package si.ijs.searchpointsrv.context;
+
+import javax.servlet.ServletContextListener;
+
+public class SpContextListener implements ServletContextListener {
+	
+}

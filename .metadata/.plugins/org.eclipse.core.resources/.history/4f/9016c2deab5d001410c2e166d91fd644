@@ -1,0 +1,12 @@
+
+# glib specific properties
+glib.unicode.file = /home/lstopar/workspace/JSI/searchpoint/glib/bin/UnicodeDef.Bin
+glib.dmoz.file = /home/lstopar/workspace/JSI/searchpoint/DMoz.dat
+
+# BING search API
+# test API key
+bing.search.apikey = IWBf7jPfsFw7m2QrNM493NWYTYiJ0ynYXVejNWA6kkc
+bing.search.apikey = agzOfae9TB8CsLkJ8rxSN/fq5QjG4G1H+RW+JzYMnbY
+
+# server API key
+#bing.search.apikey = Y8O7wAHCl7z/DIlISSbZbAPDGT7waINUCSMC89gAHGA=

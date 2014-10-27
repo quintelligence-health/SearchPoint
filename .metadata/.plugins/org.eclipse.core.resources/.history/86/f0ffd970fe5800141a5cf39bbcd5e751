@@ -1,0 +1,40 @@
+package si.ijs.searchpoint;
+
+import java.io.IOException;
+
+public class SearchPoint {
+
+	private static SearchPoint instance;
+	
+	static {
+		try {
+			System.loadLibrary("SearchPointJava");
+		} catch (UnsatisfiedLinkError e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+	}
+	
+	public static synchronized SearchPoint getInstance() {
+		try {
+			if (instance == null) {
+				instance = new SearchPoint();
+			}
+			return instance;
+		} catch (IOException ex) {
+			throw new RuntimeException("Failed to initialize search point!");
+		}
+	};
+	
+	private SearchPoint() throws IOException {}
+	
+	public native void init(String unicodeDefPath) throws IOException;
+	
+	public native String processQuery(String query, String clustKey, int limit);
+	
+	public native String rankByPos(double x, double y, int page, String queryId);
+	
+	public native String fetchKeywords(double x, double y, String queryId);
+	
+	public native void close();
+}

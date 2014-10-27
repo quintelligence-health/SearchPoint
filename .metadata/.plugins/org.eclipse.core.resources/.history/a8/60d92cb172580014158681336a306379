@@ -1,0 +1,31 @@
+package si.ijs.searchpoint;
+
+public class SearchPoint {
+
+	private static final SearchPoint instance = new SearchPoint();
+	
+	static {
+		try {
+			System.loadLibrary("SearchPointJava");
+		} catch (UnsatisfiedLinkError e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+	}
+	
+	public static synchronized SearchPoint getInstance() { return instance; };
+	
+	private SearchPoint() {
+		init();
+	}
+	
+	private native void init();
+	
+	public native String processQuery(String query, String clustKey, int limit);
+	
+	public native String rankByPos(double x, double y, int page, String queryId);
+	
+	public native String fetchKeywords(double x, double y, String queryId);
+	
+	public native void close();
+}

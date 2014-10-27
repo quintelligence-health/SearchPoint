@@ -1,0 +1,11 @@
+package si.ijs.searchpoint;
+
+import java.util.List;
+
+public class SpResult {
+//	
+//	private String queryId;
+//	private String query;
+//	private List<Item> items;
+//	
+}

@@ -1,0 +1,56 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta name = "viewport" content = "initial-scale = 0.5, user-scalable = no" />
+	<title>SearchPoint</title>
+	<link type="text/css" rel="Stylesheet" href="./css/searchpoint.css" />
+	<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+	
+	<script type="text/javascript" src="js/jquery-1.10.2.js"></script>
+	<script type="text/javascript" src="js/sp.js"></script>
+	<script>
+	  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+	
+	  ga('create', 'UA-56055149-1', 'auto');
+	  ga('send', 'pageview');
+	</script>
+</head>
+<body onload="checkAuthorized()">
+	<br />
+	<br />
+	<br />
+	<br />
+	<section id="center">
+		<table>
+			<tbody>
+				<tr>
+					<td><img alt="SearchPoint" src="./images/logo.jpg" /></td>
+				</tr>
+				<tr>
+					<td>
+						<input id="q" maxlength="2048" name="q" size="55" title="SearchPoint Search" value="" />
+						<script type="application/javascript">
+							$('#q').keypress(function (event) {
+								if (event.which == 13 || event.keyCode == 13)
+									processSubmit('kmeans');
+							});
+						</script>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<input name="search" id="kmeans" value="Search with topics" type="button" onclick="return processSubmit(this.id);" />
+						<input name="search" id="dmoz" value="Search with dmoz.org" type="button" onclick="return processSubmit(this.id);" />
+					</td>            
+				</tr>
+			</tbody>
+		</table>
+		<br /><br /><br /><br />
+		<p class="about"><a href="http://searchpoint.ijs.si/About.htm" target="_top">About</a> - ©2007-2011 SearchPoint</p>
+	</section>
+</body>
+</html>

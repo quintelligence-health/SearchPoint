@@ -1,0 +1,60 @@
+#include "SearchPoint.h"
+
+int main(int argc, char* argv[]){
+#ifndef NDEBUG
+    // report we are running with all Asserts turned on
+    printf("*** Running in debug mode ***\n");
+    setbuf(stdout, NULL);
+#endif
+
+	try {
+		// create environment
+		Env=TEnv(argc, argv, TNotify::StdNotify);
+		// command line parameters
+		Env.PrepArgs("Search Point Server", 0);
+		const int PortN = Env.GetIfArgPrefixInt("-port:", 8080, "Server Port");
+		if (Env.IsEndOfRun()){
+			return 0;
+		}
+
+		const TStr BaseUrl = "sp";
+		const TStr ClientPath = "../SearchPointClient";
+		const PNotify Notify = TStdNotify::New();
+
+		// load Unicode definition
+		TUnicodeDef::Load("./dbs/UnicodeDef.bin");
+
+		//create and register the servlets
+		TSAppSrvFunV SrvFunV;
+
+		//creating clustering utils
+		TStr DefaultClustUtils = "kmeans";
+		THash<TStr, PSpClustUtils> ClustUtilsH;
+		ClustUtilsH.AddDat(DefaultClustUtils, TSpDPMeansClustUtils::New());
+		//ClustUtilsH.AddDat(DefaultClustUtils, TSpDPMeansClustUtils::New(.06));
+//		ClustUtilsH.AddDat("dmoz", TSpDmozClustUtils::New("dmoz_data/DMoz.dat"));
+
+		//creating a SearchPoint object
+		const PSpSearchPoint PSearchPoint = TSpSearchPointImpl::New(ClustUtilsH, DefaultClustUtils,
+			10, TSpBingEngine::New(Notify));
+
+		SrvFunV.Add(TSpDemoSrv::New(BaseUrl, ClientPath, PSearchPoint));
+		SrvFunV.Add(TSASFunFile::New("favicon.ico", "../SearchPointClient/images/logo.ico", "image/ico"));
+		PWebSrv WebSrv = TSAppSrv::New(PortN, SrvFunV, Notify, true, false);
+
+		// wait for requests
+		while (true) {
+			try {
+				TLoop::Run();
+			} catch (...) {
+				Notify->OnNotify(TNotifyType::ntErr, "Exception on socket loop!");
+			}
+		}
+
+		return 0;
+	} catch (const PExcept& Except) {
+		ErrNotify(Except->GetMsgStr());
+	}
+	
+	return 1;
+}

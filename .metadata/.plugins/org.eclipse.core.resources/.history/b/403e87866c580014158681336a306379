@@ -1,0 +1,5 @@
+package si.ijs.searchpointsrv.context;
+
+public class SpContextListener {
+
+}

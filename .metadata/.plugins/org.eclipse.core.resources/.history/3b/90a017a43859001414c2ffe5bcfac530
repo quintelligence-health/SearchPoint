@@ -1,0 +1,99 @@
+#include <jni.h>
+#include <stdio.h>
+#include <SearchPoint.h>
+#include "si_ijs_searchpoint_SearchPoint.h"
+
+const PNotify Notify = TStdNotify::New();
+TSpSearchPointImpl* SearchPoint = NULL;
+
+JNIEXPORT void JNICALL Java_si_ijs_searchpoint_SearchPoint_init(JNIEnv * env, jobject thisObj, jstring dbsPath) {
+	try {
+		Notify->OnNotify(TNotifyType::ntInfo, "Initializing SearchPoint ...");
+
+		if (SearchPoint != NULL) {
+			Notify->OnNotify(TNotifyType::ntWarn, "Previous instance of search point detected, destroying previous instance ...");
+			delete SearchPoint;
+		}
+
+		Notify->OnNotify(TNotifyType::ntInfo, "Loading UnicodeDef SearchPoint ...");
+
+		TStr DbsPath = TStr(env->GetStringUTFChars(dbsPath, JNI_FALSE));
+		TUnicodeDef::Load(DbsPath);
+
+		TStr DefaultClustUtils = "kmeans";
+		THash<TStr, PSpClustUtils> ClustUtilsH;
+		ClustUtilsH.AddDat(DefaultClustUtils, TSpDPMeansClustUtils::New(Notify));
+
+		Notify->OnNotify(TNotifyType::ntInfo, "Creating SearchPoint instance ...");
+		SearchPoint = new TSpSearchPointImpl(ClustUtilsH, DefaultClustUtils, 10, TSpBingEngine::New(Notify));
+	} catch (...) {
+		throw env->ThrowNew(env->FindClass("java.io.IOException"), "Failed to initialize search point!");
+	}
+}
+
+/*
+ * Class:     SearchPointJava
+ * Method:    processQuery
+ * Signature: (Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_si_ijs_searchpoint_SearchPoint_processQuery(JNIEnv * env, jobject thisObj, jstring query, jstring clustKey, jint limit) {
+	TStr QueryStr = TStr(env->GetStringUTFChars(query, JNI_FALSE));
+	TStr ClustKey = TStr(env->GetStringUTFChars(clustKey, JNI_FALSE));
+	TInt Limit = TInt(limit);
+
+	PSpResult SpResult = SearchPoint->ExecuteQuery(QueryStr, ClustKey, Limit);
+	TStr InsertJSon = TJsonVal::GetStrFromVal(SearchPoint->GenJSon(SpResult, 0, SearchPoint->PerPage));
+
+	return env->NewStringUTF(InsertJSon.CStr());
+}
+
+/*
+ * Class:     SearchPointJava
+ * Method:    rankByPos
+ * Signature: (DDLjava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_si_ijs_searchpoint_SearchPoint_rankByPos(JNIEnv * env, jobject thisObj, jdouble x, jdouble y, jint page, jstring queryId) {
+	TFltPr PosPr(x, y);
+	TInt Page = page;
+	TStr QueryId = TStr(env->GetStringUTFChars(queryId, JNI_FALSE));
+
+	TFltPrV PosV;	PosV.Add(PosPr);
+
+	PJsonVal ResultJson = SearchPoint->ProcPosPageRq(PosV, Page, QueryId);
+	TStr Result = TJsonVal::GetStrFromVal(ResultJson);
+
+	return env->NewStringUTF(Result.CStr());
+}
+
+/*
+ * Class:     SearchPointJava
+ * Method:    fetchKeywords
+ * Signature: (DDLjava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_si_ijs_searchpoint_SearchPoint_fetchKeywords(JNIEnv * env, jobject thisObj, jdouble x, jdouble y, jstring queryId) {
+	TFltPr PosPr(x, y);
+	TStr QueryId = TStr(env->GetStringUTFChars(queryId, JNI_FALSE));
+
+	PJsonVal ResultJson = SearchPoint->ProcessPosKwRq(PosPr, QueryId);
+	TStr Result = TJsonVal::GetStrFromVal(ResultJson);
+
+	return env->NewStringUTF(Result.CStr());
+}
+
+JNIEXPORT jstring JNICALL Java_si_ijs_searchpoint_SearchPoint_getQueryId(JNIEnv * env, jobject thisObj, jstring query, jstring clustering, jint limit) {
+	TStr QueryStr = TStr(env->GetStringUTFChars(query, JNI_FALSE));
+	TStr ClustKey = TStr(env->GetStringUTFChars(clustering, JNI_FALSE));
+	TInt Limit = TInt(limit);
+
+	TStr QueryId = SearchPoint->GenQueryId(QueryStr, ClustKey, Limit);
+
+	return env->NewStringUTF(QueryId.CStr());
+}
+
+JNIEXPORT void JNICALL JNICALL Java_si_ijs_searchpoint_SearchPoint_close(JNIEnv * env, jobject thisObjt) {
+	Notify->OnNotify(TNotifyType::ntInfo, "Destroying SearchPoint ...");
+
+	delete SearchPoint;
+
+	Notify->OnNotify(TNotifyType::ntInfo, "Done!");
+}

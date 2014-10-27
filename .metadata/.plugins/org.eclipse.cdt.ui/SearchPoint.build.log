@@ -1,0 +1,6 @@
+09:34:18 **** Incremental Build of configuration Default for project SearchPoint ****
+make all 
+make: *** No rule to make target `all'.  Stop.
+
+09:34:18 Build Finished (took 85ms)
+
