@@ -21,5 +21,6 @@
 	],
 	"server": {
 		"port": 8181
-	}
+	},
+	"modulePath": "/home/adria/demos/SearchPoint/node/SearchPointCpp/"
 }

@@ -252,7 +252,7 @@ private:
 	int FetchResults(const TStr& Query, TSpItemV& ItemV, const int& Limit, const int& Offset);
 
 	static FILE* OpenPipe(const TStr& ApiKey, const TStr& Query,
-			const int& Offset, const int& Limit);
+			const int& Offset, const int& Limit, const PNotify& Notify);
 	static void ClosePipe(FILE* Pipe);
 };
 
