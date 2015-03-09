@@ -1,0 +1,1 @@
+cmd_Release/obj.target/glib.a := rm -f Release/obj.target/glib.a && ar crs Release/obj.target/glib.a Release/obj.target/glib/../../../qminer/src/glib/base/base.o Release/obj.target/glib/../../../qminer/src/glib/mine/mine.o Release/obj.target/glib/../../../qminer/src/glib/concurrent/thread.o

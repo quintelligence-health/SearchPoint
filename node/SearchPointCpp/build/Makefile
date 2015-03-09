@@ -321,8 +321,8 @@ ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
 endif
 
 quiet_cmd_regen_makefile = ACTION Regenerating $@
-cmd_regen_makefile = cd $(srcdir); /usr/local/lib/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/home/lstopar/workspace/JSI/projects/demos/SearchPoint/node/SearchPointCpp/build/config.gypi -I/usr/local/lib/node_modules/node-gyp/addon.gypi -I/home/lstopar/workspace/JSI/projects/demos/qminer/src/third_party/node/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=../../../qminer/src/third_party/node" "-Dmodule_root_dir=/home/lstopar/workspace/JSI/projects/demos/SearchPoint/node/SearchPointCpp" binding.gyp
-Makefile: $(srcdir)/../../../qminer/src/third_party/node/common.gypi $(srcdir)/build/config.gypi $(srcdir)/binding.gyp $(srcdir)/../../../../../../../../../usr/local/lib/node_modules/node-gyp/addon.gypi
+cmd_regen_makefile = cd $(srcdir); /usr/local/lib/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/home/adria/demos/SearchPoint/node/SearchPointCpp/build/config.gypi -I/usr/local/lib/node_modules/node-gyp/addon.gypi -I/home/adria/demos/qminer/src/third_party/node/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=../../../qminer/src/third_party/node" "-Dmodule_root_dir=/home/adria/demos/SearchPoint/node/SearchPointCpp" binding.gyp
+Makefile: $(srcdir)/../../../qminer/src/third_party/node/common.gypi $(srcdir)/../../../../../../usr/local/lib/node_modules/node-gyp/addon.gypi $(srcdir)/build/config.gypi $(srcdir)/binding.gyp
 	$(call do_cmd,regen_makefile)
 
 # "all" is a concatenation of the "all" targets from all the included
