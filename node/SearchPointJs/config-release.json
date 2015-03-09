@@ -11,12 +11,12 @@
 	"logs": [
 		{
 			"type": "stdout",
-			"level": "debug"
+			"level": "warn"
 		},
 		{
 			"type": "file",
-			"file": "../../log.log",
-			"level": "warn"
+			"file": "/home/adria/demos/logs/sp.log",
+			"level": "info"
 		}
 	],
 	"server": {
