@@ -1,1 +1,0 @@
-cmd_Release/obj.target/sp.node := flock ./Release/linker.lock g++ -shared -pthread -rdynamic -m64  -Wl,-soname=sp.node -o Release/obj.target/sp.node -Wl,--start-group Release/obj.target/sp/src/spnode.o Release/obj.target/sp/src/sp.o Release/obj.target/sp/../../../qminer/src/nodejs/nodeutil.o Release/obj.target/glib.a -Wl,--end-group -lrt -luuid -fopenmp -llapacke
