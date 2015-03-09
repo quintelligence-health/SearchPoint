@@ -17,3 +17,6 @@ Servers*
 
 # build
 build/
+*.a
+*.o
+*.so
