@@ -21,5 +21,6 @@
 	],
 	"server": {
 		"port": 8282
-	}
+	},
+	"modulePath": "../SearchPointCpp/"
 }

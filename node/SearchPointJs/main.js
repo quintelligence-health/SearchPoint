@@ -4,7 +4,7 @@ var logformat = require('bunyan-format');
 var express = require('express');
 //var bodyParser = require("body-parser");
 var path = require('path');
-var searchPoint = require('../SearchPointCpp/');
+var searchPoint;// = require('../SearchPointCpp/');
 
 var API_PATH = '/api';
 
@@ -76,6 +76,9 @@ function initSp() {
 // initialization
 var config = readConfig(process.argv[2]);
 var log = initLog();
+
+searchPoint = require(config.modulePath);
+
 var sp = initSp();
 
 //==================================================================
