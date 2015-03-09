@@ -239,8 +239,8 @@ private:
 	TRnd Rnd;
 
 public:
-	TSpBingEngine(const TStrV& BingApiKeyV, const PNotify& Notify=TStdNotify::New());
-	static PSpDataSource New(const TStrV& BingApiKeyV, const PNotify& Notify=TStdNotify::New())
+	TSpBingEngine(const TStrV& BingApiKeyV, const PNotify& Notify);
+	static PSpDataSource New(const TStrV& BingApiKeyV, const PNotify& Notify)
 		{ return new TSpBingEngine(BingApiKeyV, Notify); }
 
 protected:
@@ -250,6 +250,10 @@ private:
 	int ParseResponseBody(const TStr& XmlData, TSpItemV& ItemV, const int& Offset) const;
 	void CreateTagNameHash(THash<TStr, TChA>& TagHash) const;
 	int FetchResults(const TStr& Query, TSpItemV& ItemV, const int& Limit, const int& Offset);
+
+	static FILE* OpenPipe(const TStr& ApiKey, const TStr& Query,
+			const int& Offset, const int& Limit);
+	static void ClosePipe(FILE* Pipe);
 };
 
 ///////////////////////////////////////////////

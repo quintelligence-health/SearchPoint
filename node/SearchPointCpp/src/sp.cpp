@@ -106,8 +106,6 @@ int TSpBingEngine::ParseResponseBody(const TStr& XmlData, TSpItemV& ResultItemV,
 
 	EAssertR(PDoc->IsOk(), "Invalid response from search API: " + XmlData);
 
-//	HasNext = PDoc->IsTagTok("feed|link");
-
 	TXmlTokV ResultTokV;	PDoc->GetTagTokV("feed|entry", ResultTokV);
 	//iterate over all the results parse each result and add it to the result vector
 	for (int i = 0; i < ResultTokV.Len(); i++) {
@@ -161,36 +159,13 @@ int TSpBingEngine::FetchResults(const TStr& Query, TSpItemV& ResultItemV, const 
 
 	try {
 		// select the API key
-		TStr ApiKey = BingApiKeyV[Rnd.GetUniDevInt(BingApiKeyV.Len())];
+		const TStr& ApiKey = BingApiKeyV[Rnd.GetUniDevInt(BingApiKeyV.Len())];
 
 		// fetch the data from the server
-#ifdef GLib_WIN
-		TStr UrlStr = "https://api.datamarket.azure.com/Data.ashx/Bing/SearchWeb/v1/Web?Query=%27" + Query + "%27&$skip=" + TInt::GetStr(Offset) + "&$top=" + TInt::GetStr(Limit) + "&$format=Atom";
-		TStr FetchStr = "curl -k -H \"Authorization: Basic " + ApiKey + "\" \"" + TUrl::New(UrlStr)->GetUrlStr() + "\" > query_output.txt";
+		FILE* Pipe = OpenPipe(ApiKey, Query, Offset, Limit);
 
-		system(FetchStr.CStr());
-
+		// read the response
 		TChA Resp = "";
-		{
-			TFIn In("query_output.txt");
-			TChA Ln;
-			while (In.GetNextLn(Ln)) {
-				Resp += Ln;
-			}
-		}
-
-#else
-		TStr UrlStr = "https://api.datamarket.azure.com/Data.ashx/Bing/SearchWeb/v1/Web?Query=%27" + Query + "%27&\\$skip=" + TInt::GetStr(Offset) + "&\\$top=" + TInt::GetStr(Limit) + "&\\$format=Atom";
-		TStr FetchStr = "curl -k -H \"Authorization: Basic " + ApiKey + "\" \"" + TUrl::New(UrlStr)->GetUrlStr() + "\"";
-
-		Notify->OnNotifyFmt(TNotifyType::ntInfo, "Fetching: %s", FetchStr.CStr());
-
-		// run the command in bash and read the input
-		FILE* Pipe = popen(FetchStr.CStr(), "r");
-		EAssertR(Pipe != NULL, "Failed to run curl command!");
-
-		TChA Resp = "";
-
 		char Buff[128];
 		while (!feof(Pipe)) {
 			if (fgets(Buff, 128, Pipe) != NULL) {
@@ -198,8 +173,7 @@ int TSpBingEngine::FetchResults(const TStr& Query, TSpItemV& ResultItemV, const 
 			}
 		}
 
-		pclose(Pipe);
-#endif
+		ClosePipe(Pipe);
 
 		NFetched = TSpBingEngine::ParseResponseBody(Resp, ResultItemV, Offset);
 	} catch (const PExcept& Except) {
@@ -208,6 +182,31 @@ int TSpBingEngine::FetchResults(const TStr& Query, TSpItemV& ResultItemV, const 
 	}
 
 	return NFetched;
+}
+
+FILE* TSpBingEngine::OpenPipe(const TStr& ApiKey, const TStr& Query,
+		const int& Offset, const int& Limit) {
+	const TStr UrlStr = "https://api.datamarket.azure.com/Data.ashx/Bing/SearchWeb/v1/Web?Query=%27" + Query + "%27&\\$skip=" + TInt::GetStr(Offset) + "&\\$top=" + TInt::GetStr(Limit) + "&\\$format=Atom";
+	const TStr FetchStr = "curl -k -H \"Authorization: Basic " + ApiKey + "\" \"" + TUrl::New(UrlStr)->GetUrlStr() + "\"";
+
+	Notify->OnNotifyFmt(TNotifyType::ntInfo, "Fetching: %s", FetchStr.CStr());
+
+#ifdef GLib_WIN
+	FILE* Pipe = _popen(FetchStr.CStr(), "r");
+#else
+	FILE* Pipe = popen(FetchStr.CStr(), "r");
+#endif
+
+	EAssertR(Pipe != NULL, "Failed to run curl command!");
+	return Pipe;
+}
+
+void TSpBingEngine::ClosePipe(FILE* Pipe) {
+#ifdef GLib_WIN
+		_pclose(Pipe);
+#else
+		pclose(Pipe);
+#endif
 }
 
 void TSpBingEngine::CreateTagNameHash(THash<TStr, TChA>& TagHash) const {
