@@ -162,7 +162,7 @@ int TSpBingEngine::FetchResults(const TStr& Query, TSpItemV& ResultItemV, const 
 		const TStr& ApiKey = BingApiKeyV[Rnd.GetUniDevInt(BingApiKeyV.Len())];
 
 		// fetch the data from the server
-		FILE* Pipe = OpenPipe(ApiKey, Query, Offset, Limit);
+		FILE* Pipe = OpenPipe(ApiKey, Query, Offset, Limit, Notify);
 
 		// read the response
 		TChA Resp = "";
@@ -185,7 +185,7 @@ int TSpBingEngine::FetchResults(const TStr& Query, TSpItemV& ResultItemV, const 
 }
 
 FILE* TSpBingEngine::OpenPipe(const TStr& ApiKey, const TStr& Query,
-		const int& Offset, const int& Limit) {
+		const int& Offset, const int& Limit, const PNotify& Notify) {
 	const TStr UrlStr = "https://api.datamarket.azure.com/Data.ashx/Bing/SearchWeb/v1/Web?Query=%27" + Query + "%27&\\$skip=" + TInt::GetStr(Offset) + "&\\$top=" + TInt::GetStr(Limit) + "&\\$format=Atom";
 	const TStr FetchStr = "curl -k -H \"Authorization: Basic " + ApiKey + "\" \"" + TUrl::New(UrlStr)->GetUrlStr() + "\"";
 
