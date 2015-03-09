@@ -1,0 +1,156 @@
+var fs = require('fs');
+var bunyan = require('bunyan');
+var logformat = require('bunyan-format');
+var express = require('express');
+//var bodyParser = require("body-parser");
+var path = require('path');
+var searchPoint = require('../SearchPointCpp/');
+
+var API_PATH = '/api';
+
+var QUERY_PARAM = 'q';
+var QUERY_ID_PARAM = 'qid';
+var CLUST_KEY_PARAM = 'c';
+var LIMIT_PARAM = 'n';
+var PAGE_PARAM = 'p';
+var COORD_X_PARAM = 'x';
+var COORD_Y_PARAM = 'y';
+var POSITIONS_PARAM = 'pos';
+
+var DEFAULT_LIMIT = 200;
+
+
+//==================================================================
+// INITIALIZATION FUNCTIONS
+//==================================================================
+
+function readConfig(fname) {
+	var configStr = fs.readFileSync(fname);
+	return JSON.parse(configStr);
+}
+
+function initLog() {
+	var streams = [];
+	
+	config.logs.forEach(function (stream) {
+		if (stream.type == 'stdout') {
+			streams.push({
+				stream: logformat({ 
+					outputMode: 'short',
+					out: process.stdout
+				}),
+				level: stream.level
+			});
+		} else {	// file
+			streams.push({
+				path: stream.file,
+				level: stream.level
+			});
+		}
+	});
+	
+	return bunyan.createLogger({
+		name: 'SearchPoint',
+		streams: streams,
+	});
+}
+
+function initSp() {
+	log.info('Initializing SearchPoint ...');
+	var unicodePath = config.sp.unicodePath;
+	var dmozPath = config.sp.dmozPath;
+	var apiKeys = config.sp.bingApiKeys;
+	
+	log.info('Encoding API keys ...');
+	for (var i = 0; i < apiKeys.length; i++) {
+		var key = apiKeys[i];
+		var encoded = new Buffer(':' + key).toString('base64');
+		
+		log.debug('Key: %s, encoded: %s', key, encoded);
+		apiKeys[i] = encoded;
+	}
+	
+	return new searchPoint.SearchPoint(apiKeys, unicodePath, dmozPath);
+}
+
+// initialization
+var config = readConfig(process.argv[2]);
+var log = initLog();
+var sp = initSp();
+
+//==================================================================
+// SERVER
+//==================================================================
+
+var app = express();
+var server;
+
+function initRestApi() {
+	app.get(API_PATH + '/query', function (req, resp) {
+		try {
+			if (log.debug())
+				log.debug('Processing query ...');
+			
+			var query = req.query[QUERY_PARAM];
+			var clustKey = req.query[CLUST_KEY_PARAM];
+			var limit = LIMIT_PARAM in req.query ? parseInt(req.query[LIMIT_PARAM]) : DEFAULT_LIMIT;
+			
+			if (isNaN(limit)) limit = DEFAULT_LIMIT;
+			
+			resp.send(sp.processQuery(query, clustKey, limit));						
+		} catch (e) {
+			log.error(e, 'Failed to query keywords!');
+			resp.status(500);	// internal server error
+		}
+		
+		resp.end();
+	});
+	
+	app.get(API_PATH + '/rank', function (req, resp) {
+		try {
+			if (log.debug())
+				log.debug('Ranking query ...');
+			
+			var queryId = req.query[QUERY_ID_PARAM];
+			var page = parseInt(req.query[PAGE_PARAM]);
+			var pos = req.query[POSITIONS_PARAM][0];
+						
+			resp.send(sp.rankByPos(parseFloat(pos.x), parseFloat(pos.y), page, queryId));
+		} catch (e) {
+			log.error(e, 'Failed to query keywords!');
+			resp.status(500);	// internal server error
+		}
+		
+		resp.end();
+	});
+	
+	app.get(API_PATH + '/keywords', function (req, resp) {
+		try {
+			if (log.debug())
+				log.debug('Fetching keywords ...');
+			
+			var queryId = req.query[QUERY_ID_PARAM];
+			var x = parseFloat(req.query[COORD_X_PARAM]);
+			var y = parseFloat(req.query[COORD_Y_PARAM]);
+						
+			resp.send(sp.fetchKeywords(x, y, queryId));
+		} catch (e) {
+			log.error(e, 'Failed to query keywords!');
+			resp.status(500);	// internal server error
+		}
+		
+		resp.end();
+	});
+}
+
+//serve static directories on the UI path
+app.use('/', express.static(path.join(__dirname, './ui')));
+
+initRestApi();
+
+// start server
+server = app.listen(config.server.port);
+
+log.info('================================================');
+log.info('Server running at http://localhost:%d', config.server.port);
+log.info('================================================');

@@ -1,0 +1,1 @@
+cmd_Debug/obj.target/glib.a := rm -f Debug/obj.target/glib.a && ar crs Debug/obj.target/glib.a Debug/obj.target/glib/../../../qminer/src/glib/base/base.o Debug/obj.target/glib/../../../qminer/src/glib/mine/mine.o Debug/obj.target/glib/../../../qminer/src/glib/concurrent/thread.o

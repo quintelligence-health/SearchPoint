@@ -1,0 +1,23 @@
+{
+	"sp": {
+		"unicodePath": "/home/lstopar/workspace/JSI/searchpoint/glib/bin/UnicodeDef.Bin",
+		"dmozPath": "/home/lstopar/workspace/JSI/searchpoint/DMoz.dat",
+		"bingApiKeys": [
+		    "Y8O7wAHCl7z/DIlISSbZbAPDGT7waINUCSMC89gAHGA="
+		]
+	},
+	"logs": [
+		{
+			"type": "stdout",
+			"level": "debug"
+		},
+		{
+			"type": "file",
+			"file": "log.log",
+			"level": "warn"
+		}
+	],
+	"server": {
+		"port": 8282
+	}
+}
