@@ -101,12 +101,12 @@ TSpBingEngine::TSpBingEngine(const TStrV& _BingApiKeyV, const PNotify& Notify):
 		BingApiKeyV(_BingApiKeyV),
 		Rnd(0) {}
 
-void TSpBingEngine::ParseResponseBody(const TStr& XmlData, TSpItemV& ResultItemV, const int& Offset, bool& HasNext) const {
+int TSpBingEngine::ParseResponseBody(const TStr& XmlData, TSpItemV& ResultItemV, const int& Offset) const {
 	PXmlDoc PDoc = TXmlDoc::LoadStr(XmlData);
 
 	EAssertR(PDoc->IsOk(), "Invalid response from search API: " + XmlData);
 
-	HasNext = PDoc->IsTagTok("feed|link");
+//	HasNext = PDoc->IsTagTok("feed|link");
 
 	TXmlTokV ResultTokV;	PDoc->GetTagTokV("feed|entry", ResultTokV);
 	//iterate over all the results parse each result and add it to the result vector
@@ -128,32 +128,37 @@ void TSpBingEngine::ParseResponseBody(const TStr& XmlData, TSpItemV& ResultItemV
 			TSpItem(Offset + i + 1, TagH.GetDat("d:Title"), TagH("d:Description"), TagH("d:Url"), TagH("d:DisplayUrl"))
 		);
 	}
+
+	return ResultTokV.Len();
 }
 
 void TSpBingEngine::ExecuteQuery(PSpResult& SpResult, const int NResults) {
 	try {
-		int NQueries = (int) ceil((double) NResults/TSpBingEngine::MaxResultsPerQuery);
+		const int NQueries = (int) ceil((double) NResults/TSpBingEngine::MaxResultsPerQuery);
 
-		bool HasNext = true;
+		int Limit, StepFetched;
+
 		int Offset = 0;
 		int Remain = NResults;
-		for (int i = 0; i < NQueries; i++) {
-			int Limit = TMath::Mn(Remain, TSpBingEngine::MaxResultsPerQuery);
 
-			FetchResults(SpResult->QueryStr, SpResult->ItemV, Limit, Offset, HasNext);
+		int QueryN = 0;
+		do {
+			Limit = TMath::Mn(Remain, TSpBingEngine::MaxResultsPerQuery);
 
-			Offset += Limit;
-			Remain -= Limit;
+			StepFetched = FetchResults(SpResult->QueryStr, SpResult->ItemV, Limit, Offset);
 
-			if (!HasNext) break;
-		}
+			Offset += StepFetched;
+			Remain -= StepFetched;
+		} while (StepFetched >= Limit && ++QueryN < NQueries);
 	} catch (const PExcept& e) {
 		Notify->OnNotifyFmt(TNotifyType::ntErr, "An exception occurred while fetching results from the document source. Nr. %s\n", e->GetMsgStr().CStr());
 		throw e;
 	}
 }
 
-void TSpBingEngine::FetchResults(const TStr& Query, TSpItemV& ResultItemV, const int& Limit, const int& Offset, bool& HasNext) {
+int TSpBingEngine::FetchResults(const TStr& Query, TSpItemV& ResultItemV, const int& Limit, const int& Offset) {
+	int NFetched = 0;
+
 	try {
 		// select the API key
 		TStr ApiKey = BingApiKeyV[Rnd.GetUniDevInt(BingApiKeyV.Len())];
@@ -178,6 +183,8 @@ void TSpBingEngine::FetchResults(const TStr& Query, TSpItemV& ResultItemV, const
 		TStr UrlStr = "https://api.datamarket.azure.com/Data.ashx/Bing/SearchWeb/v1/Web?Query=%27" + Query + "%27&\\$skip=" + TInt::GetStr(Offset) + "&\\$top=" + TInt::GetStr(Limit) + "&\\$format=Atom";
 		TStr FetchStr = "curl -k -H \"Authorization: Basic " + ApiKey + "\" \"" + TUrl::New(UrlStr)->GetUrlStr() + "\"";
 
+		Notify->OnNotifyFmt(TNotifyType::ntInfo, "Fetching: %s", FetchStr.CStr());
+
 		// run the command in bash and read the input
 		FILE* Pipe = popen(FetchStr.CStr(), "r");
 		EAssertR(Pipe != NULL, "Failed to run curl command!");
@@ -194,11 +201,18 @@ void TSpBingEngine::FetchResults(const TStr& Query, TSpItemV& ResultItemV, const
 		pclose(Pipe);
 #endif
 
-		TSpBingEngine::ParseResponseBody(Resp, ResultItemV, Offset, HasNext);
+		{
+			PSOut SOut = TFOut::New("output.txt", false);
+			SOut->PutStr(Resp);
+		}
+
+		NFetched = TSpBingEngine::ParseResponseBody(Resp, ResultItemV, Offset);
 	} catch (const PExcept& Except) {
 		Notify->OnNotifyFmt(TNotifyType::ntInfo, "Failed to parse BING data: %s!", Except->GetMsgStr().CStr());
 		throw Except;
 	}
+
+	return NFetched;
 }
 
 void TSpBingEngine::CreateTagNameHash(THash<TStr, TChA>& TagHash) const {
@@ -483,7 +497,7 @@ void TSpDPMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& 
 
 	// does the clustering into clusters
 	TRnd Rnd(1);
-	PBowDocPart BowDocPart = TBowClust::GetDPMeansPartForDocWgtBs(TStdNotify::New(),
+	PBowDocPart BowDocPart = TBowClust::GetDPMeansPartForDocWgtBs(Notify,
 		BowDocWgtBs, BowDocBs, BowSim, Rnd, Lambda, MinDocsPerClust, MaxClusts, 1, 10000, TBowClustInitScheme::tbcKMeansPP, 4);
 
 	Notify->OnNotify(TNotifyType::ntInfo, "Clusters computed, computing statistics ...");

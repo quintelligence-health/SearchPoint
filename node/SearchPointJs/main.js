@@ -88,16 +88,21 @@ var server;
 function initRestApi() {
 	app.get(API_PATH + '/query', function (req, resp) {
 		try {
-			if (log.debug())
-				log.debug('Processing query ...');
-			
-			var query = req.query[QUERY_PARAM];
+			var query = req.query[QUERY_PARAM];//encodeURI(req.query[QUERY_PARAM]);
 			var clustKey = req.query[CLUST_KEY_PARAM];
 			var limit = LIMIT_PARAM in req.query ? parseInt(req.query[LIMIT_PARAM]) : DEFAULT_LIMIT;
 			
 			if (isNaN(limit)) limit = DEFAULT_LIMIT;
 			
-			resp.send(sp.processQuery(query, clustKey, limit));						
+			if (log.debug())
+				log.debug('Processing query: query: %s, clust: %s, limit: %d ...', query, clustKey, limit);
+			
+			var result = sp.processQuery(encodeURI(query), clustKey, limit);
+			
+			if (log.debug())
+				log.debug('Done!');
+			
+			resp.send(result);						
 		} catch (e) {
 			log.error(e, 'Failed to query keywords!');
 			resp.status(500);	// internal server error
@@ -108,13 +113,13 @@ function initRestApi() {
 	
 	app.get(API_PATH + '/rank', function (req, resp) {
 		try {
-			if (log.debug())
-				log.debug('Ranking query ...');
-			
 			var queryId = req.query[QUERY_ID_PARAM];
 			var page = parseInt(req.query[PAGE_PARAM]);
 			var pos = req.query[POSITIONS_PARAM][0];
-						
+			
+			if (log.debug())
+				log.debug('Ranking: queryId: %s, page: %d, pos: %s', queryId, page, JSON.stringify(pos));
+			
 			resp.send(sp.rankByPos(parseFloat(pos.x), parseFloat(pos.y), page, queryId));
 		} catch (e) {
 			log.error(e, 'Failed to query keywords!');
@@ -126,13 +131,13 @@ function initRestApi() {
 	
 	app.get(API_PATH + '/keywords', function (req, resp) {
 		try {
-			if (log.debug())
-				log.debug('Fetching keywords ...');
-			
 			var queryId = req.query[QUERY_ID_PARAM];
 			var x = parseFloat(req.query[COORD_X_PARAM]);
 			var y = parseFloat(req.query[COORD_Y_PARAM]);
-						
+			
+			if (log.debug())
+				log.debug('Fetching keywords queryId: %s, x: %d, y: %d ...', queryId, x, y);
+			
 			resp.send(sp.fetchKeywords(x, y, queryId));
 		} catch (e) {
 			log.error(e, 'Failed to query keywords!');

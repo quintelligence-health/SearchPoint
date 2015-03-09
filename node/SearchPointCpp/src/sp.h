@@ -247,9 +247,9 @@ protected:
 	void ExecuteQuery(PSpResult& PResult, const int NResults = 200);
 
 private:
-	void ParseResponseBody(const TStr& XmlData, TSpItemV& ItemV, const int& Offset, bool& HasNext) const;
+	int ParseResponseBody(const TStr& XmlData, TSpItemV& ItemV, const int& Offset) const;
 	void CreateTagNameHash(THash<TStr, TChA>& TagHash) const;
-	void FetchResults(const TStr& Query, TSpItemV& ItemV, const int& Limit, const int& Offset, bool& HasNext);
+	int FetchResults(const TStr& Query, TSpItemV& ItemV, const int& Limit, const int& Offset);
 };
 
 ///////////////////////////////////////////////

@@ -23,7 +23,7 @@
 		var listCont;
 		
 		$(document).ready(function () {
-			var query =  $(document).getUrlParam('q');
+			var query =  decodeURI($(document).getUrlParam('q'));
 			var clust =  $(document).getUrlParam('c');
 			var limit =  $(document).getUrlParam('n');
 			
@@ -98,7 +98,7 @@
 		<div id="advanced" style="display: none;">
 			<span class="form-entry">
 				<label for="spn-nresults">Number of search results:</label>
-				<input id="spn-nresults" type="text" min="200" step="50" value="" />
+				<input id="spn-nresults" type="text" min="200" step="50" value="200" />
 			</span>
 		</div>
 		<div id="advanced-toggle"></div>

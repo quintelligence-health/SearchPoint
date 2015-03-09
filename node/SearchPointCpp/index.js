@@ -1,1 +1,2 @@
-module.exports = exports = require('bindings')('sp.node');
+var sp = require('bindings')('sp.node');
+module.exports = exports = sp;

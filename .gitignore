@@ -9,3 +9,7 @@
 
 # other directories
 Servers*
+
+# eclipse
+.project
+.settings
