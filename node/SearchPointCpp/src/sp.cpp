@@ -201,11 +201,6 @@ int TSpBingEngine::FetchResults(const TStr& Query, TSpItemV& ResultItemV, const 
 		pclose(Pipe);
 #endif
 
-		{
-			PSOut SOut = TFOut::New("output.txt", false);
-			SOut->PutStr(Resp);
-		}
-
 		NFetched = TSpBingEngine::ParseResponseBody(Resp, ResultItemV, Offset);
 	} catch (const PExcept& Except) {
 		Notify->OnNotifyFmt(TNotifyType::ntInfo, "Failed to parse BING data: %s!", Except->GetMsgStr().CStr());
