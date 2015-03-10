@@ -186,7 +186,12 @@ int TSpBingEngine::FetchResults(const TStr& Query, TSpItemV& ResultItemV, const 
 
 FILE* TSpBingEngine::OpenPipe(const TStr& ApiKey, const TStr& Query,
 		const int& Offset, const int& Limit, const PNotify& Notify) {
+#ifdef GLib_WIN
+	const TStr UrlStr = "https://api.datamarket.azure.com/Data.ashx/Bing/SearchWeb/v1/Web?Query=%27" + Query + "%27&$skip=" + TInt::GetStr(Offset) + "&$top=" + TInt::GetStr(Limit) + "&$format=Atom";
+#else
 	const TStr UrlStr = "https://api.datamarket.azure.com/Data.ashx/Bing/SearchWeb/v1/Web?Query=%27" + Query + "%27&\\$skip=" + TInt::GetStr(Offset) + "&\\$top=" + TInt::GetStr(Limit) + "&\\$format=Atom";
+#endif
+
 	const TStr FetchStr = "curl -k -H \"Authorization: Basic " + ApiKey + "\" \"" + TUrl::New(UrlStr)->GetUrlStr() + "\"";
 
 	Notify->OnNotifyFmt(TNotifyType::ntInfo, "Fetching: %s", FetchStr.CStr());
