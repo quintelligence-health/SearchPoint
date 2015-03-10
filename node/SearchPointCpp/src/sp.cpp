@@ -184,35 +184,47 @@ int TSpBingEngine::FetchResults(const TStr& Query, TSpItemV& ResultItemV, const 
 	return NFetched;
 }
 
+#ifdef GLib_WIN
+
 FILE* TSpBingEngine::OpenPipe(const TStr& ApiKey, const TStr& Query,
 		const int& Offset, const int& Limit, const PNotify& Notify) {
-#ifdef GLib_WIN
 	const TStr UrlStr = "https://api.datamarket.azure.com/Data.ashx/Bing/SearchWeb/v1/Web?Query=%27" + Query + "%27&$skip=" + TInt::GetStr(Offset) + "&$top=" + TInt::GetStr(Limit) + "&$format=Atom";
-#else
-	const TStr UrlStr = "https://api.datamarket.azure.com/Data.ashx/Bing/SearchWeb/v1/Web?Query=%27" + Query + "%27&\\$skip=" + TInt::GetStr(Offset) + "&\\$top=" + TInt::GetStr(Limit) + "&\\$format=Atom";
-#endif
-
 	const TStr FetchStr = "curl -k -H \"Authorization: Basic " + ApiKey + "\" \"" + TUrl::New(UrlStr)->GetUrlStr() + "\"";
 
 	Notify->OnNotifyFmt(TNotifyType::ntInfo, "Fetching: %s", FetchStr.CStr());
 
-#ifdef GLib_WIN
 	FILE* Pipe = _popen(FetchStr.CStr(), "r");
-#else
-	FILE* Pipe = popen(FetchStr.CStr(), "r");
-#endif
 
 	EAssertR(Pipe != NULL, "Failed to run curl command!");
 	return Pipe;
 }
 
 void TSpBingEngine::ClosePipe(FILE* Pipe) {
-#ifdef GLib_WIN
-		_pclose(Pipe);
-#else
-		pclose(Pipe);
-#endif
+	_pclose(Pipe);
 }
+
+#else
+
+FILE* TSpBingEngine::OpenPipe(const TStr& ApiKey, const TStr& Query,
+		const int& Offset, const int& Limit, const PNotify& Notify) {
+	const TStr UrlStr = "https://api.datamarket.azure.com/Data.ashx/Bing/SearchWeb/v1/Web?Query=%27" + Query + "%27&\\$skip=" + TInt::GetStr(Offset) + "&\\$top=" + TInt::GetStr(Limit) + "&\\$format=Atom";
+	const TStr FetchStr = "curl -k -H \"Authorization: Basic " + ApiKey + "\" \"" + TUrl::New(UrlStr)->GetUrlStr() + "\"";
+
+	Notify->OnNotifyFmt(TNotifyType::ntInfo, "Fetching: %s", FetchStr.CStr());
+
+	FILE* Pipe = popen(FetchStr.CStr(), "r");
+
+	EAssertR(Pipe != NULL, "Failed to run curl command!");
+	return Pipe;
+}
+
+void TSpBingEngine::ClosePipe(FILE* Pipe) {
+	pclose(Pipe);
+}
+
+#endif
+
+
 
 void TSpBingEngine::CreateTagNameHash(THash<TStr, TChA>& TagHash) const {
 	TagHash.AddDat("web:Title", "");
