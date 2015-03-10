@@ -1,6 +1,11 @@
 #include "spnode.h"
 
+using namespace TSp;
+
 const TStr TNodeJsSearchPoint::ClassId = "SearchPoint";
+const TStr TNodeJsSearchPoint::DEFAULT_CLUST = "kmeans";
+const TStr TNodeJsSearchPoint::JS_DATA_SOURCE_TYPE = "func";
+const int TNodeJsSearchPoint::PER_PAGE = 10;
 
 void TNodeJsSearchPoint::Init(v8::Handle<v8::Object> Exports) {
 	v8::Isolate* Isolate = v8::Isolate::GetCurrent();
@@ -17,9 +22,18 @@ void TNodeJsSearchPoint::Init(v8::Handle<v8::Object> Exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl, "fetchKeywords", _fetchKeywords);
 	NODE_SET_PROTOTYPE_METHOD(tpl, "getQueryId", _getQueryId);
 
-	Exports->Set(v8::String::NewFromUtf8(Isolate, ClassId.CStr()),
-			   tpl->GetFunction());
+	Exports->Set(v8::String::NewFromUtf8(Isolate, ClassId.CStr()), tpl->GetFunction());
 }
+
+TNodeJsSearchPoint::TNodeJsSearchPoint(const TClustUtilH& ClustUtilH, const TStr& DefaultClust, const int& PerPage, v8::Local<v8::Function> DataSourceCall):
+		SearchPoint(nullptr) {
+	v8::Isolate* Isolate = v8::Isolate::GetCurrent();
+	v8::HandleScope HandleScope(Isolate);
+
+	QueryCallback.Reset(Isolate, DataSourceCall);
+	SearchPoint = new TSpSearchPointImpl(ClustUtilH, DEFAULT_CLUST, PER_PAGE, PSpDataSource(this));
+}
+
 
 TNodeJsSearchPoint::TNodeJsSearchPoint(TSpSearchPointImpl* _SearchPoint):
 		SearchPoint(_SearchPoint) {}
@@ -35,44 +49,39 @@ TNodeJsSearchPoint* TNodeJsSearchPoint::NewFromArgs(const v8::FunctionCallbackIn
 	try {
 		const PNotify Notify = TStdNotify::New();
 
-		EAssertR(Args[0]->IsArray(), "Argument 0 should be a vector of API keys!");
-		EAssertR(Args[1]->IsString(), "Argument 1 should be a path to the unicode definition file!");
-		EAssertR(Args[2]->IsString(), "Argument 2 should be a path to the DMoz data file!");
+		EAssertR(Args.Length() >= 1, "SearchPoint: expects 1 argument!");
+		EAssertR(Args[0]->IsObject(), "SearchPoint: argument 0 should be an object!");
+
+		v8::Local<v8::Object> ArgObj = Args[0]->ToObject();
+		PJsonVal ArgJson = TNodeJsUtil::GetObjJson(ArgObj, true);
 
 		Notify->OnNotify(TNotifyType::ntInfo, "Parsing arguments ...");
 
-		const TStr UnicodeDefPath = TNodeJsUtil::GetArgStr(Args, 1);
-		const TStr DmozFilePath = TNodeJsUtil::GetArgStr(Args, 2);
-
-		// parse API keys
-		TStrV ApiKeyV;
-		v8::Handle<v8::Array> Array = v8::Handle<v8::Array>::Cast(Args[0]);
-
-		for (uint i = 0; i < Array->Length(); i++) {
-			EAssertR(Array->Get(i)->IsString(), "Array of API keys should only contain strings!");
-			v8::Local<v8::Value> ApiKeyVal = Array->Get(i);
-			v8::String::Utf8Value Utf8(ApiKeyVal->ToString());
-
-			ApiKeyV.Add(*Utf8);
-		}
+		const TStr UnicodeDefPath = ArgJson->GetObjStr("unicodePath");
+		const TStr DmozFilePath = ArgJson->GetObjStr("dmozPath");
 
 		// load the unicode file
 		Notify->OnNotify(TNotifyType::ntInfo, "Loading UnicodeDef ...");
 		TUnicodeDef::Load(UnicodeDefPath);
 		Notify->OnNotify(TNotifyType::ntInfo, "Loaded!");
 
-		TStr DefaultClustUtils = "kmeans";
-		THash<TStr, PSpClustUtils> ClustUtilsH;
-
-		ClustUtilsH.AddDat(DefaultClustUtils, TSpDPMeansClustUtils::New(Notify));
+		TClustUtilH ClustUtilsH;
+		ClustUtilsH.AddDat(DEFAULT_CLUST, TSpDPMeansClustUtils::New(Notify));
 		ClustUtilsH.AddDat("dmoz", TSpDmozClustUtils::New(DmozFilePath));
 
-		Notify->OnNotify(TNotifyType::ntInfo, "Creating SearchPoint instance ...");
+		// construct the data source
+		v8::Local<v8::Value> DsObj = ArgObj->Get(v8::String::NewFromUtf8(Isolate, "dataSource"));
 
-		return new TNodeJsSearchPoint(new TSpSearchPointImpl(ClustUtilsH, DefaultClustUtils, 10, TSpBingEngine::New(ApiKeyV, Notify)));
+		if (DsObj->IsFunction()) {
+			v8::Local<v8::Function> DsFun = v8::Handle<v8::Function>::Cast(DsObj);
+			return new TNodeJsSearchPoint(ClustUtilsH, DEFAULT_CLUST, PER_PAGE, DsFun);
+		} else {
+			const PJsonVal DataSrcJson = ArgJson->GetObjKey("datasource");
+			TStrV ApiKeyV;	DataSrcJson->GetObjStrV("apiKeys", ApiKeyV);
+			return new TNodeJsSearchPoint(new TSpSearchPointImpl(ClustUtilsH, DEFAULT_CLUST, PER_PAGE, TSpBingEngine::New(ApiKeyV, Notify)));
+		}
 	} catch (const PExcept& Except) {
-		Isolate->ThrowException(v8::Exception::TypeError(
-							v8::String::NewFromUtf8(Isolate, TStr("[addon] Exception: " + Except->GetMsgStr()).CStr())));
+		TNodeJsUtil::ThrowJsException(Isolate, Except);
 		return nullptr;
 	}
 }
@@ -146,7 +155,45 @@ void TNodeJsSearchPoint::getQueryId(const v8::FunctionCallbackInfo<v8::Value>& A
 	Args.GetReturnValue().Set(v8::String::NewFromUtf8(Isolate, QueryId.CStr()));
 }
 
+void TNodeJsSearchPoint::ExecuteQuery(PSpResult& SpResult, const int Limit) {
+	if (QueryCallback.IsEmpty()) { return; }
+
+	v8::Isolate* Isolate = v8::Isolate::GetCurrent();
+	v8::HandleScope HandleScope(Isolate);
+
+	try {
+		const TStr& QueryStr = SpResult->QueryStr;
+
+		// call the callback to get the results
+		v8::Local<v8::Function> Callback = v8::Local<v8::Function>::New(Isolate, QueryCallback);
+		PJsonVal ResultJson = TNodeJsUtil::ExecuteJson(Callback, v8::String::NewFromUtf8(Isolate, QueryStr.CStr())->ToObject(), v8::Integer::New(Isolate, Limit)->ToObject());
+
+		EAssertR(ResultJson->IsArr(), "The result of the callback should be an array!");
+
+		TSpItemV& ItemV = SpResult->ItemV;
+
+		// parse the results
+		const int Len = ResultJson->GetArrVals();
+		for (int i = 0; i < Len; i++) {
+			PJsonVal ItemJson = ResultJson->GetArrVal(i);
+
+			const TStr& Title = ItemJson->GetObjStr("title");
+			const TStr& Desc = ItemJson->GetObjStr("description");
+			const TStr& Url = ItemJson->GetObjStr("url");
+			const TStr& DispUrl = ItemJson->GetObjStr("displayUrl");
+
+			ItemV.Add(TSpItem(i+1, Title, Desc, Url, DispUrl));
+		}
+	} catch (const PExcept& Except) {
+		TNodeJsUtil::ThrowJsException(Isolate, Except);
+	}
+}
+
 void TNodeJsSearchPoint::Clr() {
+	if (!QueryCallback.IsEmpty()) {
+		QueryCallback.Reset();
+	}
+
 	if (SearchPoint != nullptr) {
 		delete SearchPoint;
 		SearchPoint = nullptr;
@@ -154,6 +201,77 @@ void TNodeJsSearchPoint::Clr() {
 }
 
 
+//const TStr TNodeJsDataSource::ClassId = "DataSource";
+//
+//void TNodeJsDataSource::Init(v8::Handle<v8::Object> Exports) {
+//	v8::Isolate* Isolate = v8::Isolate::GetCurrent();
+//	v8::HandleScope HandleScope(Isolate);
+//
+//	v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New(Isolate, TNodeJsUtil::_NewJs<TNodeJsDataSource>);
+//	tpl->SetClassName(v8::String::NewFromUtf8(Isolate, ClassId.CStr()));
+//	// ObjectWrap uses the first internal field to store the wrapped pointer.
+//	tpl->InstanceTemplate()->SetInternalFieldCount(1);
+//
+//	// Add all methods, getters and setters here.
+////	NODE_SET_PROTOTYPE_METHOD(tpl, "processQuery", _processQuery);
+////	NODE_SET_PROTOTYPE_METHOD(tpl, "rankByPos", _rankByPos);
+////	NODE_SET_PROTOTYPE_METHOD(tpl, "fetchKeywords", _fetchKeywords);
+////	NODE_SET_PROTOTYPE_METHOD(tpl, "getQueryId", _getQueryId);
+//
+//	Exports->Set(v8::String::NewFromUtf8(Isolate, ClassId.CStr()), tpl->GetFunction());
+//}
+//
+//TNodeJsDataSource::TNodeJsDataSource(v8::Handle<v8::Function>& _QueryCallback) {
+//	v8::Isolate* Isolate = v8::Isolate::GetCurrent();
+//	v8::HandleScope HandleScope(Isolate);
+//	QueryCallback.Reset(Isolate, _QueryCallback);
+//}
+//
+//TNodeJsDataSource::~TNodeJsDataSource() {
+//	QueryCallback.Reset();
+//}
+//
+//TNodeJsDataSource* TNodeJsDataSource::NewFromArgs(const v8::FunctionCallbackInfo<v8::Value>& Args) {
+//	EAssertR(Args.Length() == 1 && Args[0]->IsFunction(), "Argument 1 is not a function!");
+//
+//	v8::Handle<v8::Function> Callback = v8::Handle<v8::Function>::Cast(Args[0]);
+//	return new TNodeJsDataSource(Callback);
+//}
+//
+//void TNodeJsDataSource::ExecuteQuery(PSpResult& Result, const int Limit) {
+//	if (QueryCallback.IsEmpty()) { return; }
+//
+//	v8::Isolate* Isolate = v8::Isolate::GetCurrent();
+//	v8::HandleScope HandleScope(Isolate);
+//
+//	try {
+//		// call the callback to get the results
+//		v8::Local<v8::Function> Callback = v8::Local<v8::Function>::New(Isolate, QueryCallback);
+//		PJsonVal ResultJson = TNodeJsUtil::ExecuteJson(Callback, v8::Integer::New(Isolate, Limit)->ToObject());
+//
+//		EAssertR(ResultJson->IsArr(), "The result of the callback should be an array!");
+//
+//		TSpItemV& ItemV = Result->ItemV;
+//
+//		// parse the results
+//		const int Len = ResultJson->GetArrVals();
+//		for (int i = 0; i < Len; i++) {
+//			PJsonVal ItemJson = ResultJson->GetArrVal(i);
+//
+//			const TStr& Title = ItemJson->GetObjStr("title");
+//			const TStr& Desc = ItemJson->GetObjStr("description");
+//			const TStr& Url = ItemJson->GetObjStr("url");
+//			const TStr& DispUrl = ItemJson->GetObjStr("displayUrl");
+//
+//			ItemV.Add(TSpItem(i+1, Title, Desc, Url, DispUrl));
+//		}
+//	} catch (const PExcept& Except) {
+//		TNodeJsUtil::ThrowJsException(Isolate, Except);
+//	}
+//}
+
+//////////////////////////////////////////////
+// module initialization
 void Init(v8::Handle<v8::Object> Exports) {
 	TNodeJsSearchPoint::Init(Exports);
 }

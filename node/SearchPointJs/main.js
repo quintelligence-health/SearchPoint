@@ -2,9 +2,8 @@ var fs = require('fs');
 var bunyan = require('bunyan');
 var logformat = require('bunyan-format');
 var express = require('express');
-//var bodyParser = require("body-parser");
 var path = require('path');
-var searchPoint;// = require('../SearchPointCpp/');
+var spMod;// = require('../SearchPointCpp/');
 
 var API_PATH = '/api';
 
@@ -59,25 +58,21 @@ function initSp() {
 	log.info('Initializing SearchPoint ...');
 	var unicodePath = config.sp.unicodePath;
 	var dmozPath = config.sp.dmozPath;
-	var apiKeys = config.sp.bingApiKeys;
 	
-	log.info('Encoding API keys ...');
-	for (var i = 0; i < apiKeys.length; i++) {
-		var key = apiKeys[i];
-		var encoded = new Buffer(':' + key).toString('base64');
-		
-		log.debug('Key: %s, encoded: %s', key, encoded);
-		apiKeys[i] = encoded;
+	var opts = {
+		dmozPath: dmozPath,
+		unicodePath: unicodePath,
+		dataSource: spMod.fetchBing
 	}
 	
-	return new searchPoint.SearchPoint(apiKeys, unicodePath, dmozPath);
+	return new spMod.SearchPoint(opts);
 }
 
 // initialization
 var config = readConfig(process.argv[2]);
 var log = initLog();
 
-searchPoint = require(config.modulePath);
+spMod = require(config.modulePath);
 
 var sp = initSp();
 

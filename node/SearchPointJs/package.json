@@ -1,0 +1,21 @@
+{
+  "name": "SearchPoint",
+  "version": "0.1.0",
+  "description": "Search engine extension",
+  "author": "Luka Stopar <luka.stopar@ijs.si>",
+  "contributors": [],
+  "repository": {},
+  "main": "./index.js",
+  "engines": {
+    "node": "0.12.0"
+  },
+  "dependencies": {
+    "bunyan": "^1.3.4",
+    "bunyan-format": "^0.2.1",
+    "express": "^4.12.2",
+    "path": "^0.11.14"
+  },
+  "devDependencies": {},
+  "scripts": {},
+  "keywords": []
+}

@@ -1,5 +1,7 @@
 #include "sp.h"
 
+using namespace TSp;
+
 //const int TSpAbstractServer::NResultsDefault = 200;
 //const int TSpAbstractServer::NResultsMin = 200;
 //
@@ -42,6 +44,23 @@ const TUInt64 TSpQueryManager::MaxIdleSecs = 1800;	// == 60*30 == 30min
 
 const double TSpSearchPoint::MinDist = 1e-11;
 
+
+TSpItem::TSpItem():
+		Id(),
+		Title(),
+		Description(),
+		Url(),
+		DisplayUrl(),
+		DateTime() {}
+
+TSpItem::TSpItem(const int& _Id, const TStr& _Title, const TStr& _Desc,
+			const TStr& _Url, const TStr& _DispUrl):
+		Id(_Id),
+		Title(_Title),
+		Description(_Desc),
+		Url(_Url),
+		DisplayUrl(_DispUrl),
+		DateTime() {}
 
 ///////////////////////////////////////////////
 // SearchPoint-Utilities
@@ -91,6 +110,8 @@ void TSpUtils::TransformInterval(TVec<TFltV>& PointV, double MinX, double MaxX, 
 
 ///////////////////////////////////////////////
 // SearchPoint - Data Source
+const int TSpDataSource::DEFAULT_LIMIT = 200;
+
 TSpDataSource::TSpDataSource(const PNotify& _Notify):
 		Notify(_Notify) {}
 
@@ -646,7 +667,7 @@ void TSpDPMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& 
 		KwV.Add(Kw);
 	}
 
-	TSpCluster Cluster(TUInt64StrKd((uint64) DocPointV.Len(), RecIdKwWgtFqTrKdV[0].Dat.Val1), RecIdKwWgtFqTrKdV, TFltPr(.5, .5),
+	TSpCluster Cluster(TUInt64StrKd((uint64) DocPointV.Len(), RecIdKwWgtFqTrKdV.Len() > 0 ? RecIdKwWgtFqTrKdV[0].Dat.Val1 : ""), RecIdKwWgtFqTrKdV, TFltPr(.5, .5),
 			TSpClustUtils::MAX_CLUST_RADIUS);
 	ClusterV.Add(Cluster);
 	SpResult->HasBackgroundClust = true;
@@ -982,9 +1003,10 @@ bool TSpSearchPoint::IsResultCached(const TStr& QueryId) {
 	return PQueryManager->IsQuery(QueryId);
 }
 
-TSpSearchPointImpl::TSpSearchPointImpl(THash<TStr, PSpClustUtils>& _ClustUtilsH, TStr& _DefaultClustUtilsKey, const int& _PerPage,
+TSpSearchPointImpl::TSpSearchPointImpl(const TClustUtilH& _ClustUtilsH,
+		const TStr& _DefaultClustUtilsKey, const int& _PerPage,
 		const PSpDataSource& DataSource, const PNotify& Notify):
-		TSpSearchPoint(_ClustUtilsH, _DefaultClustUtilsKey, _PerPage, DataSource, TSpQueryManager::New(), Notify) {}
+				TSpSearchPoint(_ClustUtilsH, _DefaultClustUtilsKey, _PerPage, DataSource, TSpQueryManager::New(), Notify) {}
 
 
 PSpSearchPoint TSpSearchPointImpl::New(PSpClustUtils& PClustUtils, const int& PerPage, const PSpDataSource& DataSource,

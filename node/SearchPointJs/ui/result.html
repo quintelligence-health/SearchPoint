@@ -27,7 +27,7 @@
 			var clust =  $(document).getUrlParam('c');
 			var limit =  $(document).getUrlParam('n');
 			
-			if (limit == '') limit = 200;
+			if (limit == null || limit == '') limit = 200;
 			
 			$('#q').val(query);
 			$('#clustering_fld').val(clust);
@@ -40,7 +40,7 @@
 			$('#spn-nresults').spinner({
 				min: 200,
 				step: 50
-			}).val(200);
+			}).val(limit);
 			$('#spn-nresults').keypress(function(event) {
 				event.preventDefault();
 				return false;

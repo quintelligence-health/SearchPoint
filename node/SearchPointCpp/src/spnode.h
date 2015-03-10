@@ -19,6 +19,8 @@
 #include "sp.h"
 #include "nodeutil.h"
 
+using namespace TSp;
+
 /**
  * Search point javascript instance.
  *
@@ -27,14 +29,20 @@
  * @param {String} unicodePath - path to the unicode definition file
  * @param {String} dmozPath - path to the DMOZ data file
  */
-class TNodeJsSearchPoint: public node::ObjectWrap {
+class TNodeJsSearchPoint: public node::ObjectWrap, public TSpDataSource {
 	friend class TNodeJsUtil;
 public:
-	static void Init(v8::Handle<v8::Object> exports);
+	static void Init(v8::Handle<v8::Object> Exports);
 	static const TStr ClassId;
 private:
-	TSpSearchPointImpl* SearchPoint;
+	const static TStr DEFAULT_CLUST;
+	const static TStr JS_DATA_SOURCE_TYPE;
+	const static int PER_PAGE;
 
+	TSpSearchPointImpl* SearchPoint;
+	v8::Persistent<v8::Function> QueryCallback;	// used if the data source is a function
+
+	TNodeJsSearchPoint(const TClustUtilH& ClustUtilH, const TStr& DefaultClust, const int& PerPage, v8::Local<v8::Function> DataSourceCall);
 	TNodeJsSearchPoint(TSpSearchPointImpl* SearchPoint);
 	~TNodeJsSearchPoint();
 
@@ -63,9 +71,32 @@ public:
 	JsDeclareFunction(fetchKeywords);
 	JsDeclareFunction(getQueryId);
 
+	void ExecuteQuery(PSpResult& PResult, const int NResults=TSpDataSource::DEFAULT_LIMIT);
+
 private:
 	void Clr();
 };
+
+//class TNodeJsDataSource : public node::ObjectWrap, public TSpDataSource {
+//	friend class TNodeJsUtil;
+//public:
+//	static void Init(v8::Handle<v8::Object> Exports);
+//	static const TStr ClassId;
+//
+//private:
+//
+//	v8::Persistent<v8::Function> QueryCallback;
+//
+//	TNodeJsDataSource(v8::Handle<v8::Function>& QueryCallback);
+//	~TNodeJsDataSource();
+//
+//	static TNodeJsDataSource* NewFromArgs(const v8::FunctionCallbackInfo<v8::Value>& Args);
+//
+//public:
+//	void ExecuteQuery(PSpResult& PResult, const int NResults=TSpDataSource::DEFAULT_LIMIT);
+//
+//	JsDeclareProperty(type);	// TODO
+//};
 
 
 #endif /* SRC_SPNODE_H_ */

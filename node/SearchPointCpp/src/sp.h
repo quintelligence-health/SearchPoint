@@ -5,6 +5,8 @@
 #include <mine.h>
 #include <thread.h>
 
+namespace TSp {
+
 ///////////////////////////////////////////////
 // SearchPoint-Result-Item
 class TSpItem {
@@ -16,11 +18,11 @@ public:
 	TStr DisplayUrl;
 	TStr DateTime;
 public:
-	TSpItem(): Id(), Title(), Description(), Url(), DisplayUrl(), DateTime() {}
-	TSpItem(const int& _Id, const TStr& _Title, const TStr _Description, const TStr _Url, const TStr _DisplayUrl) :
-		Id(_Id), Title(_Title), Description(_Description), Url(_Url), DisplayUrl(_DisplayUrl) {}
+	TSpItem();
+	TSpItem(const int& Id, const TStr& Title, const TStr& Desc,
+			const TStr& Url, const TStr& DispUrl);
 
-  virtual ~TSpItem() {}
+	virtual ~TSpItem() {}
 };
 typedef TVec<TSpItem> TSpItemV;
 
@@ -219,11 +221,13 @@ private:
 // SearchPoint-Search-Engine
 ClassTP(TSpDataSource, PSpDataSource)//{
 protected:
+	const static int DEFAULT_LIMIT;
+
 	PNotify Notify;
 public:
 	TSpDataSource(const PNotify& Notify=TStdNotify::New());
 
-	virtual void ExecuteQuery(PSpResult& PResult, const int NResults = 200) = 0;
+	virtual void ExecuteQuery(PSpResult& PResult, const int NResults = DEFAULT_LIMIT) = 0;
 	virtual ~TSpDataSource() {}
 };
 
@@ -301,6 +305,8 @@ private:
 
 ///////////////////////////////////////////////
 // SearchPoint
+typedef THash<TStr, PSpClustUtils> TClustUtilH;
+
 ClassTP(TSpSearchPoint, PSpSearchPoint)//{
 public:
 	const static double MaxClusterX;
@@ -321,7 +327,7 @@ public:
 	PNotify Notify;
 
 protected:
-	TSpSearchPoint(const THash<TStr, PSpClustUtils>& ClustUtilsH,
+	TSpSearchPoint(const TClustUtilH& ClustUtilsH,
 			const TStr& DefaultClustUtilsKey, const int& _PerPage,
 			const PSpDataSource& DataSource, const PSpQueryManager& QueryManager=TSpQueryManager::New(),
 			const PNotify& Notify=TNullNotify::New());
@@ -370,7 +376,7 @@ private:
 // SearchPoint-Implementation
 ClassTE(TSpSearchPointImpl, TSpSearchPoint)//{	
 public:
-	TSpSearchPointImpl(THash<TStr, PSpClustUtils>& _ClustUtilsH, TStr& _DefaultClustUtilsKey, const int& _PerPage,
+	TSpSearchPointImpl(const TClustUtilH& _ClustUtilsH, const TStr& _DefaultClustUtilsKey, const int& _PerPage,
 			const PSpDataSource& DataSource, const PNotify& Notify=TNullNotify::New());
 
 	static PSpSearchPoint New(PSpClustUtils& PClustUtils, const int& PerPage, const PSpDataSource& DataSource,
@@ -452,5 +458,7 @@ public:
 //protected:
 //	PSIn ProcHtmlPgRq(const TStrKdV& FldNmValPrV, const PSAppSrvRqEnv& RqEnv, TStr& ContTypeStr);
 //};
+
+}
 
 #endif
