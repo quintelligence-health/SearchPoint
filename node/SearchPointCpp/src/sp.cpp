@@ -800,6 +800,14 @@ void TSpDmozClustUtils::TSpDmozCluster::ToVector(TVec<TSpDmozCluster>& Vector) c
 	}
 }
 
+TSpDmozClustUtils::TSpDmozClustUtils(const TStr& DmozFilePath):
+		DMozCfy(*TFIn::New(DmozFilePath)),
+		CSec() {}
+
+PSpClustUtils TSpDmozClustUtils::New(const TStr& DmozFilePath) {
+	return new TSpDmozClustUtils(DmozFilePath);
+}
+
 void TSpDmozClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& ClusterV) {
 	const TSpItemV& ResultItemV = SpResult->ItemV;
 	
@@ -1117,7 +1125,7 @@ TSpSearchPoint::TSpSearchPoint(const THash<TStr, PSpClustUtils>& _ClustUtilsH,
 		DataSource(_DataSource),
 		DefaultClustUtilsKey(_DefaultClustUtilsKey),
 		PerPage(_PerPage),
-		CacheSection(TCriticalSectionType::cstRecursive),
+		CacheSection(),
 		Notify(_Notify) {}
 
 PJsonVal TSpSearchPoint::CreateClusterJSon(const TSpCluster& Cluster) const {

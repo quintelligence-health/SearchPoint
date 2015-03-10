@@ -196,9 +196,8 @@ private:
 
 
 public:
-	TSpDmozClustUtils(const TStr& DmozFilePath):
-		DMozCfy(*TFIn::New(DmozFilePath)), CSec(TCriticalSectionType::cstRecursive) {}
-	static PSpClustUtils New(const TStr& DmozFilePath) { return new TSpDmozClustUtils(DmozFilePath); }
+	TSpDmozClustUtils(const TStr& DmozFilePath);
+	static PSpClustUtils New(const TStr& DmozFilePath);
 
 	void CalcClusters(const PSpResult& SpResult, TSpClusterV& ClusterV);
 
