@@ -16,7 +16,6 @@ Servers*
 .settings
 
 # build
-build/
 *.a
 *.o
 *.so
