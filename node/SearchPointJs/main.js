@@ -28,7 +28,7 @@ function readConfig(fname) {
 	return JSON.parse(configStr);
 }
 
-function initLog() {
+function initLogStreams() {
 	var streams = [];
 	
 	config.logs.forEach(function (stream) {
@@ -48,6 +48,10 @@ function initLog() {
 		}
 	});
 	
+	return streams;
+}
+
+function initLog(streams) {
 	return bunyan.createLogger({
 		name: 'SearchPointMain',
 		streams: streams,
@@ -70,9 +74,10 @@ function initSp() {
 
 // initialization
 var config = readConfig(process.argv[2]);
-var log = initLog();
+var logStreams = initLogStreams();
+var log = initLog(logStreams);
 
-spMod = require(config.modulePath);
+spMod = require(config.modulePath)({name: 'SearchPoint', streams: logStreams});
 
 var sp = initSp();
 

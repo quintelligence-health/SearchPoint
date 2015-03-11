@@ -16,7 +16,7 @@
 		{
 			"type": "file",
 			"file": "/home/adria/demos/logs/sp.log",
-			"level": "info"
+			"level": "debug"
 		}
 	],
 	"server": {
