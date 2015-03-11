@@ -1,1 +1,0 @@
-cmd_Debug/obj.target/sp.node := flock ./Debug/linker.lock g++ -shared -pthread -rdynamic -m64  -Wl,-soname=sp.node -o Debug/obj.target/sp.node -Wl,--start-group Debug/obj.target/sp/src/spnode.o Debug/obj.target/sp/src/sp.o Debug/obj.target/sp/../../../qminer/src/nodejs/nodeutil.o Debug/obj.target/glib.a -Wl,--end-group -lrt -luuid -fopenmp -llapacke
