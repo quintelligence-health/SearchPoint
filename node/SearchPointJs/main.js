@@ -49,7 +49,7 @@ function initLog() {
 	});
 	
 	return bunyan.createLogger({
-		name: 'SearchPoint',
+		name: 'SearchPointMain',
 		streams: streams,
 	});
 }

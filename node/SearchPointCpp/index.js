@@ -1,6 +1,7 @@
 var sp = require('bindings')('sp.node');
 var httpsync = require('http-sync');
 var math = require('mathjs');
+var util = require('util');
 
 // BING data source
 {
