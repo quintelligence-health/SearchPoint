@@ -15,12 +15,12 @@
 		},
 		{
 			"type": "file",
-			"file": "log.log",
-			"level": "warn"
+			"file": "/home/lstopar/workspace/JSI/demos/logs/sp.log",
+			"level": "debug"
 		}
 	],
 	"server": {
-		"port": 8282
+		"port": 8181
 	},
 	"modulePath": "../SearchPointCpp/"
 }
