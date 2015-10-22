@@ -33,7 +33,7 @@ class TNodeJsSearchPoint: public node::ObjectWrap, public TSpDataSource {
 	friend class TNodeJsUtil;
 public:
 	static void Init(v8::Handle<v8::Object> Exports);
-	static const TStr& GetClassId() { return "SearchPoint"; };
+	static const TStr GetClassId() { return "SearchPoint"; };
 private:
 	const static TStr DEFAULT_CLUST;
 	const static TStr JS_DATA_SOURCE_TYPE;
