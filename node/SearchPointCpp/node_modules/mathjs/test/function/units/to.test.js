@@ -1,8 +1,8 @@
 var assert = require('assert'),
     approx = require('../../../tools/approx'),
     math = require('../../../index'),
-    Unit = require('../../../lib/type/Unit'),
-    Matrix = require('../../../lib/type/Matrix'),
+    Unit = math.type.Unit,
+    Matrix = math.type.Matrix,
     unit = math.unit;
 
 describe('to', function() {
@@ -45,7 +45,7 @@ describe('to', function() {
     var b = math.to(a, unit('mm'));
 
     assert.ok(b instanceof math.type.Matrix);
-    approx.deepEqual(b, new Matrix([
+    approx.deepEqual(b, math.matrix([
       [new Unit(10, 'mm').to('mm'), new Unit(20, 'mm').to('mm')],
       [new Unit(30, 'mm').to('mm'), new Unit(40, 'mm').to('mm')]
     ]));
@@ -73,6 +73,11 @@ describe('to', function() {
 
   it('should throw an error if called with a string', function() {
     assert.throws(function () {math.to('5cm', unit('cm'))}, TypeError);
+  });
+
+  it('should LaTeX to', function () {
+    var expression = math.parse('to(2cm,m)');
+    assert.equal(expression.toTex(), '\\left(2\\cdot\\mathrm{cm}\\rightarrow\\mathrm{m}\\right)');
   });
 
 });

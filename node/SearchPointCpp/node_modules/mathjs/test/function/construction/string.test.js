@@ -30,7 +30,7 @@ describe('string', function() {
 
   it('should convert the elements of a matrix to strings', function() {
     assert.deepEqual(string(math.matrix([[2,true],['hi',null]])),
-        new math.type.Matrix([['2', 'true'],['hi', 'null']]));
+        math.matrix([['2', 'true'],['hi', 'null']]));
   });
 
   it('should convert a number to string', function() {
@@ -55,5 +55,13 @@ describe('string', function() {
   it('should throw an error if called with wrong number of arguments', function() {
     assert.throws(function () {string(1,2)}, error.ArgumentsError);
     assert.throws(function () {string(1,2,3)}, error.ArgumentsError);
+  });
+
+  it('should LaTeX string', function () {
+    var expr1 = math.parse('string()');
+    var expr2 = math.parse('string(bla)');
+    
+    assert.equal(expr1.toTex(), '""');
+    assert.equal(expr2.toTex(), '"bla"');
   });
 });

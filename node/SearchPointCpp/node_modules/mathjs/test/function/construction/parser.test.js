@@ -1,7 +1,6 @@
 var assert = require('assert'),
-    error = require('../../../lib/error/index'),
-    Parser = require('../../../lib/expression/Parser'),
-    math = require('../../../index');
+    math = require('../../../index'),
+    Parser = math.expression.Parser;
 
 describe('parser', function() {
 
@@ -9,6 +8,11 @@ describe('parser', function() {
     var parser = math.parser();
 
     assert(parser instanceof Parser);
+  });
+
+  it('should LaTeX parser', function () { //This doesn't really make sense in a way
+    var expression = math.parse('parser()');
+    assert.equal(expression.toTex(), '\\mathrm{parser}\\left(\\right)');
   });
 
 });

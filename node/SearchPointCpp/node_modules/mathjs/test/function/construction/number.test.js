@@ -46,7 +46,7 @@ describe('number', function() {
   });
 
   it('should convert the elements of a matrix to numbers', function() {
-    assert.deepEqual(number(math.matrix(['123',true])), new math.type.Matrix([123, 1]));
+    assert.deepEqual(number(math.matrix(['123',true])), math.matrix([123, 1]));
   });
 
   it('should convert the elements of an array to numbers', function() {
@@ -65,6 +65,16 @@ describe('number', function() {
     assert.throws(function () {number(math.unit('5cm'))}, /Second argument with valueless unit expected/);
     assert.throws(function () {number(math.unit('5cm'), 2)}, TypeError);
     assert.throws(function () {number('23', 2)}, TypeError);
+  });
+
+  it('should LaTeX number', function () {
+    var expr1 = math.parse('number()');
+    var expr2 = math.parse('number(1)');
+    var expr3 = math.parse('number(1,cm)');
+
+    assert.equal(expr1.toTex(), '0');
+    assert.equal(expr2.toTex(), '\\left(1\\right)');
+    assert.equal(expr3.toTex(), '\\left(\\left(1\\right)\\mathrm{cm}\\right)');
   });
 });
 

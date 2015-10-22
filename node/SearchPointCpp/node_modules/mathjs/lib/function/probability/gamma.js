@@ -5,7 +5,7 @@ module.exports = function (math, config) {
 
       BigNumber = math.type.BigNumber,
       Complex = require('../../type/Complex'),
-      collection = require('../../type/collection'),
+      collection = math.collection,
 
       isBoolean = util['boolean'].isBoolean,
       isComplex = Complex.isComplex,
@@ -33,7 +33,7 @@ module.exports = function (math, config) {
    *
    *    combinations, factorial, permutations
    *
-   * @param {Number | Array | Matrix | Boolean | null} n   An integer number
+   * @param {Number | Array | Matrix | Boolean | null} n   A real or complex number
    * @return {Number | Array | Matrix}    The gamma of `n`
    */
   math.gamma = function gamma (n) {

@@ -2,8 +2,8 @@ var assert = require('assert');
 var error = require('../../../lib/error/index');
 var seed = require('seed-random');
 var _ = require('underscore');
-var Matrix = require('../../../lib/type/Matrix');
 var math = require('../../../index');
+var Matrix = math.type.Matrix;
 var distribution = require('../../../lib/function/probability/distribution')(math);
 
 var assertApproxEqual = function(testVal, val, tolerance) {
@@ -249,7 +249,7 @@ describe('distribution', function () {
     });
 
     it('should pick numbers from the given matrix following an uniform distribution', function() {
-      var possibles = new Matrix([11, 22, 33, 44, 55]),
+      var possibles = math.matrix([11, 22, 33, 44, 55]),
           picked = [],
           count;
 
@@ -275,7 +275,7 @@ describe('distribution', function () {
 
     it('should throw an error when providing a multi dimensional matrix', function() {
       assert.throws(function () {
-        uniformDistrib.pickRandom(new Matrix([[1,2], [3,4]]));
+        uniformDistrib.pickRandom(math.matrix([[1,2], [3,4]]));
       }, /Only one dimensional vectors supported/);
     });
   });
@@ -325,5 +325,10 @@ describe('distribution', function () {
     var dist = distribution('uniform');
     assert.throws(function () {dist.pickRandom(23); }, error.TypeError);
     // TODO: more type testing...
+  });
+
+  it('should LaTeX distribution', function () {
+    var expression = math.parse('distribution(normal)');
+    assert.equal(expression.toTex(), '\\mathrm{distribution}\\left(\\mathrm{normal}\\right)');
   });
 });

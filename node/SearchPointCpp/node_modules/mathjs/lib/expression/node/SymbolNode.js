@@ -41,7 +41,12 @@ SymbolNode.prototype._compile = function (defs) {
   defs['undef'] = undef;
   defs['Unit'] = Unit;
 
-  if (this.name in defs.math) {
+  if (this.name in defs.args) {
+    // this is a FunctionAssignment argument
+    // (like an x when inside the expression of a function assignment `f(x) = ...`)
+    return this.name;
+  }
+  else if (this.name in defs.math) {
     return '("' + this.name + '" in scope ? scope["' + this.name + '"] : math["' + this.name + '"])';
   }
   else {
@@ -99,11 +104,18 @@ SymbolNode.prototype.toString = function() {
 
 /**
  * Get LaTeX representation
+ * @param {Object|function} callback(s)
  * @return {String} str
  * @override
  */
-SymbolNode.prototype.toTex = function() {
-  return latex.toSymbol(this.name);
+SymbolNode.prototype._toTex = function(callbacks) {
+  var symbol = latex.toSymbol(this.name);
+  if (symbol[0] === '\\') {
+    //no space needed if the symbol starts with '\'
+    return symbol;
+  }
+  //the space prevents symbols from breaking stuff like '\cdot' if it's written right before the symbol
+  return ' ' + symbol;
 };
 
 module.exports = SymbolNode;

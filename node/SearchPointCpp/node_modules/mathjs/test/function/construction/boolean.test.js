@@ -31,7 +31,7 @@ describe('boolean', function() {
   });
 
   it('should convert the elements of a matrix or array to booleans', function() {
-    assert.deepEqual(bool(math.matrix([1,0,1,1])), new math.type.Matrix([true, false, true, true]));
+    assert.deepEqual(bool(math.matrix([1,0,1,1])), math.matrix([true, false, true, true]));
     assert.deepEqual(bool([1,0,1,1]), [true, false, true, true]);
   });
 
@@ -72,6 +72,11 @@ describe('boolean', function() {
 
   it('should throw an error if used with a unit', function() {  
     assert.throws(function () {bool(math.unit('5cm'))}, SyntaxError);
+  });
+
+  it('should LaTeX boolean', function () {
+    var expression = math.parse('boolean(1)');
+    assert.equal(expression.toTex(), '\\mathrm{boolean}\\left(1\\right)');
   });
 
 });

@@ -12,12 +12,12 @@ describe('transpose', function() {
 
   it('should transpose a vector', function() {
     assert.deepEqual(transpose([1,2,3]), [1,2,3]);
-    assert.deepEqual(transpose(math.matrix([1,2,3])), math.matrix([1,2,3]));
+    assert.deepEqual(transpose(math.matrix([1,2,3]).toArray()), [1,2,3]);
   });
 
   it('should transpose a 2d matrix', function() {
     assert.deepEqual(transpose([[1,2,3],[4,5,6]]), [[1,4],[2,5],[3,6]]);
-    assert.deepEqual(transpose(math.matrix([[1,2,3],[4,5,6]])), math.matrix([[1,4],[2,5],[3,6]]));
+    assert.deepEqual(transpose(math.matrix([[1,2,3],[4,5,6]]).toArray()), [[1,4],[2,5],[3,6]]);
     assert.deepEqual(transpose([[1,2],[3,4]]), [[1,3],[2,4]]);
     assert.deepEqual(transpose([[1,2,3,4]]), [[1],[2],[3],[4]]);
   });
@@ -35,5 +35,9 @@ describe('transpose', function() {
     assert.throws(function () {transpose()}, error.ArgumentsError);
     assert.throws(function () {transpose([1,2],2)}, error.ArgumentsError);
   });
-});
 
+  it('should LaTeX transpose', function () {
+    var expression = math.parse('transpose([[1,2],[3,4]])');
+    assert.equal(expression.toTex(), '\\left(\\begin{bmatrix}1&2\\\\3&4\\\\\\end{bmatrix}\\right)^\\top');
+  });
+});

@@ -36,7 +36,7 @@ describe('complex', function() {
       new math.type.Complex(1, 0),
       new math.type.Complex(2, 3)
     ];
-    assert.deepEqual(complex(math.matrix([2, 1, complex(2, 3)])), new math.type.Matrix(result));
+    assert.deepEqual(complex(math.matrix([2, 1, complex(2, 3)])), math.matrix(result));
     assert.deepEqual(complex([2, 1, complex(2, 3)]), result);
   });
 
@@ -78,5 +78,15 @@ describe('complex', function() {
 
   it('should throw an error if called with more than 2 arguments', function() {
     assert.throws(function () {complex(2,3,4)}, error.ArgumentsError);
+  });
+
+  it('should LaTeX complex', function () {
+    var expr1 = math.parse('complex()');
+    var expr2 = math.parse('complex(1)');
+    var expr3 = math.parse('complex(1,2)');
+
+    assert.equal(expr1.toTex(), '0');
+    assert.equal(expr2.toTex(), '\\left(1\\right)');
+    assert.equal(expr3.toTex(), '\\left(\\left(1\\right)+i\\cdot\\left(2\\right)\\right)');
   });
 });
