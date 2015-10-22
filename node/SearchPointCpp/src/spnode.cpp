@@ -2,7 +2,6 @@
 
 using namespace TSp;
 
-const TStr TNodeJsSearchPoint::ClassId = "SearchPoint";
 const TStr TNodeJsSearchPoint::DEFAULT_CLUST = "kmeans";
 const TStr TNodeJsSearchPoint::JS_DATA_SOURCE_TYPE = "func";
 const int TNodeJsSearchPoint::PER_PAGE = 10;
@@ -12,7 +11,7 @@ void TNodeJsSearchPoint::Init(v8::Handle<v8::Object> Exports) {
 	v8::HandleScope HandleScope(Isolate);
 
 	v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New(Isolate, TNodeJsUtil::_NewJs<TNodeJsSearchPoint>);
-	tpl->SetClassName(v8::String::NewFromUtf8(Isolate, ClassId.CStr()));
+	tpl->SetClassName(v8::String::NewFromUtf8(Isolate, GetClassId().CStr()));
 	// ObjectWrap uses the first internal field to store the wrapped pointer.
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
@@ -22,7 +21,7 @@ void TNodeJsSearchPoint::Init(v8::Handle<v8::Object> Exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl, "fetchKeywords", _fetchKeywords);
 	NODE_SET_PROTOTYPE_METHOD(tpl, "getQueryId", _getQueryId);
 
-	Exports->Set(v8::String::NewFromUtf8(Isolate, ClassId.CStr()), tpl->GetFunction());
+	Exports->Set(v8::String::NewFromUtf8(Isolate, GetClassId().CStr()), tpl->GetFunction());
 }
 
 TNodeJsSearchPoint::TNodeJsSearchPoint(const TClustUtilH& ClustUtilH, const TStr& DefaultClust, const int& PerPage, v8::Local<v8::Function> DataSourceCall):
