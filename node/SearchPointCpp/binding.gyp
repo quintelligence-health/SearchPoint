@@ -29,7 +29,7 @@
         'conditions': [
             # operating system specific parameters
             ['OS == "linux"', {
-                'libraries': [ '-lrt', '-luuid', '-fopenmp', '<(LIN_ALG_LIB)' ],
+                'libraries': [ '-lrt', '-luuid', '-fopenmp' ],
                 # GCC flags
                 'cflags_cc!': [ '-fno-rtti', '-fno-exceptions' ],
                 'cflags_cc': [ '-std=c++0x', '-frtti', '-fexceptions' ],
