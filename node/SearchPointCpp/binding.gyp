@@ -13,12 +13,7 @@
                 ],
             }
         },
-        'defines': [
-            '<(LIN_ALG_BLAS)',
-            '<(LIN_ALG_LAPACKE)',
-            '<(INDEX_64)',
-            '<(INTEL)'
-        ],
+        'defines': [],
         # hack for setting xcode settings based on example from
         # http://src.chromium.org/svn/trunk/o3d/build/common.gypi
         'target_conditions': [        
@@ -51,7 +46,7 @@
                     },
                     'VCLinkerTool': {
                         'SubSystem' : 1, # Console
-                        'AdditionalOptions': ['<(LIN_ALG_LIB)']
+                        'AdditionalOptions': []
                     },
                 },
             }],
