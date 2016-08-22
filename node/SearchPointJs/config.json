@@ -11,7 +11,7 @@
 	"logs": [
 		{
 			"type": "stdout",
-			"level": "debug"
+			"level": "trace"
 		},
 		{
 			"type": "file",
