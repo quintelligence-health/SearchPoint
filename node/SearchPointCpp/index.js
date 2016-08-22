@@ -30,15 +30,12 @@ module.exports = function (logConfig) {
 	(function () {
 		log.info('Initializing BING data source ...');
 		
-//		var apiKeys = [
-//			"IWBf7jPfsFw7m2QrNM493NWYTYiJ0ynYXVejNWA6kkc",
-//			"Y8O7wAHCl7z/DIlISSbZbAPDGT7waINUCSMC89gAHGA=",
-//			"agzOfae9TB8CsLkJ8rxSN/fq5QjG4G1H+RW+JzYMnbY"
-//		];
-		
 		var apiKeys = [
-		    'cFxO0RVY/YrD2pOjwAFL1izVwrFCCNEFneel599YtaI='
-	    ];
+			"IWBf7jPfsFw7m2QrNM493NWYTYiJ0ynYXVejNWA6kkc",
+			"Y8O7wAHCl7z/DIlISSbZbAPDGT7waINUCSMC89gAHGA=",
+			"agzOfae9TB8CsLkJ8rxSN/fq5QjG4G1H+RW+JzYMnbY",
+			'cFxO0RVY/YrD2pOjwAFL1izVwrFCCNEFneel599YtaI='
+		];
 		
 		if (apiKeys == null || apiKeys.length == 0) {
 			log.fatal('Bing API keys missing! Exiting ...');
