@@ -20,21 +20,26 @@ function initLog(config) {
 	}
 }
 
-module.exports = function (logConfig) {
+module.exports = function (logConfig, apiKeys) {
 	// initialize the logger
 	var log = initLog(logConfig);
 	
 	log.info('Initializing module SearchPoint ...');
 	
 	// BING data source
-	{
+	(function () {
 		log.info('Initializing BING data source ...');
 		
-		var apiKeys = [
-			"IWBf7jPfsFw7m2QrNM493NWYTYiJ0ynYXVejNWA6kkc",
-			"Y8O7wAHCl7z/DIlISSbZbAPDGT7waINUCSMC89gAHGA=",
-			"agzOfae9TB8CsLkJ8rxSN/fq5QjG4G1H+RW+JzYMnbY"
-		]
+//		var apiKeys = [
+//			"IWBf7jPfsFw7m2QrNM493NWYTYiJ0ynYXVejNWA6kkc",
+//			"Y8O7wAHCl7z/DIlISSbZbAPDGT7waINUCSMC89gAHGA=",
+//			"agzOfae9TB8CsLkJ8rxSN/fq5QjG4G1H+RW+JzYMnbY"
+//		]
+		
+		if (apiKeys == null || apiKeys.length == 0) {
+			log.fatal('Bing API keys missing! Exiting ...');
+			process.exit(3);
+		}
 		
 		var MAX_PER_QUERY = 50;
 		
@@ -46,6 +51,9 @@ module.exports = function (logConfig) {
 		
 		function parseBingResp(data) {		
 			try {
+				if (log.trace())
+					log.trace('Parsing BING response:\n%s', data);
+				
 				var dataJson = JSON.parse(data);
 				var result = [];
 				
@@ -125,7 +133,7 @@ module.exports = function (logConfig) {
 		}
 		
 		log.info('Done!');
-	}
+	})()
 	
 	return sp;
 }

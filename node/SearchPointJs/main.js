@@ -77,7 +77,7 @@ var config = readConfig(process.argv[2]);
 var logStreams = initLogStreams();
 var log = initLog(logStreams);
 
-spMod = require(config.modulePath)({name: 'SearchPoint', streams: logStreams});
+spMod = require(config.modulePath)({name: 'SearchPoint', streams: logStreams}, config.bingApiKeys);
 
 var sp = initSp();
 
