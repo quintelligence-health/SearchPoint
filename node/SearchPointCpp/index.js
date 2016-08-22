@@ -42,6 +42,8 @@ module.exports = function (logConfig) {
 			process.exit(3);
 		}
 		
+		log.info('Using %d BING API keys ...', apiKeys.length);
+		
 		var MAX_PER_QUERY = 50;
 		
 		for (var i = 0; i < apiKeys.length; i++) {
@@ -91,7 +93,12 @@ module.exports = function (logConfig) {
 			while (hasNext && i++ < nQueries) {
 				try {
 					// select the API key
-					var apiKey = apiKeys[math.randomInt(apiKeys.length)];
+					var keyN = math.randomInt(apiKeys.length);
+					
+					if (log.debug())
+						log.debug('Using API key number %d ...', keyN);
+					
+					var apiKey = apiKeys[keyN];
 					var top = Math.min(limit - offset, MAX_PER_QUERY);
 					
 					if (log.debug())
