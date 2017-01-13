@@ -6,7 +6,7 @@
 	"logs": [
 		{
 			"type": "stdout",
-			"level": "trace"
+			"level": "debug"
 		},
 		{
 			"type": "file",
