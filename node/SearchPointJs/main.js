@@ -120,8 +120,8 @@ function initRestApi() {
 			var page = parseInt(req.query[PAGE_PARAM]);
 			var pos = req.query[POSITIONS_PARAM][0];
 			
-			if (log.debug())
-				log.debug('Ranking: queryId: %s, page: %d, pos: %s', queryId, page, JSON.stringify(pos));
+			if (log.trace())
+				log.trace('Ranking: queryId: %s, page: %d, pos: %s', queryId, page, JSON.stringify(pos));
 			
 			resp.send(sp.rankByPos(parseFloat(pos.x), parseFloat(pos.y), page, queryId));
 		} catch (e) {
@@ -138,8 +138,8 @@ function initRestApi() {
 			var x = parseFloat(req.query[COORD_X_PARAM]);
 			var y = parseFloat(req.query[COORD_Y_PARAM]);
 			
-			if (log.debug())
-				log.debug('Fetching keywords queryId: %s, x: %d, y: %d ...', queryId, x, y);
+			if (log.trace())
+				log.trace('Fetching keywords queryId: %s, x: %d, y: %d ...', queryId, x, y);
 			
 			resp.send(sp.fetchKeywords(x, y, queryId));
 		} catch (e) {
