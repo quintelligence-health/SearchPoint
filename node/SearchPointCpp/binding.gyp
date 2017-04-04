@@ -131,6 +131,7 @@
                 '../../../qminer/src/glib/base/',
                 '../../../qminer/src/glib/mine/',
                 '../../../qminer/src/glib/misc/',
+                '../../../qminer/src/third_party/sole/',
                 '../../../qminer/src/glib/concurrent/'
             ],
             'defines': [

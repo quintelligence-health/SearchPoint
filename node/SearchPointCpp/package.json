@@ -14,7 +14,8 @@
     "bunyan": "^1.3.4",
     "bunyan-format": "^0.2.1",
     "http-sync": "^0.1.1",
-    "mathjs": "^1.4.0"
+    "mathjs": "^1.4.0",
+    "querystring": "^0.2.0"
   },
   "devDependencies": {},
   "scripts": {},
