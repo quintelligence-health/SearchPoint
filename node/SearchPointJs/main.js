@@ -122,6 +122,8 @@ function initRestApi() {
 			
 			if (log.trace())
 				log.trace('Ranking: queryId: %s, page: %d, pos: %s', queryId, page, JSON.stringify(pos));
+
+            if (page < 0) throw new Error('Invalid page: ' + page);
 			
 			resp.send(sp.rankByPos(parseFloat(pos.x), parseFloat(pos.y), page, queryId));
 		} catch (e) {
