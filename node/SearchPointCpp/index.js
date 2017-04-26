@@ -31,8 +31,11 @@ module.exports = function (logConfig) {
 	(function () {
 		log.info('Initializing BING data source ...');
 		
+        // var apiKeys = [
+        //     'a024f31decb74437879f00aa568a23d6'
+        // ]
         var apiKeys = [
-            'a024f31decb74437879f00aa568a23d6'
+            '8cfb996728cb4366b146c54c0a3cf93e'      // the one registered on Mateja's name
         ]
         // var apiKeys = [ // base 64
         //     'YTAyNGYzMWRlY2I3NDQzNzg3OWYwMGFhNTY4YTIzZDY='
