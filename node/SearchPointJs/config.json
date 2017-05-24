@@ -15,7 +15,7 @@
 		}
 	],
 	"server": {
-		"port": 8181
+		"port": 8989
 	},
-	"modulePath": "../SearchPointCpp/"
+	"modulePath": "../../SearchPointCpp/"
 }

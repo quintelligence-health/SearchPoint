@@ -1,1 +1,5 @@
 node_modules/
+
+# VIM files
+.vimrc
+.jshintrc
