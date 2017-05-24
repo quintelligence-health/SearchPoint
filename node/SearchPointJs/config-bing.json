@@ -3,6 +3,14 @@
 		"unicodePath": "/home/lstopar/workspace/JSI/searchpoint/glib/bin/UnicodeDef.Bin",
 		"dmozPath": "/home/lstopar/workspace/JSI/searchpoint/DMoz.dat"
 	},
+    "source": {
+        "path": "./src/sources/bing.js",
+        "config": {
+            "apiKeys": [
+                "8cfb996728cb4366b146c54c0a3cf93e"
+            ]
+        }
+    },
 	"logs": [
 		{
 			"type": "stdout",
@@ -17,5 +25,5 @@
 	"server": {
 		"port": 8989
 	},
-	"modulePath": "../../SearchPointCpp/"
+	"modulePath": "../SearchPointCpp/"
 }
