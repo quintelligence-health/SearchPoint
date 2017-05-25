@@ -28,7 +28,7 @@ class MedlineDataSource {
                 log.warn('Response:\n%s', resp.body.toString());
             }
 
-            return self._parseResp(resp);
+            return self._parseResp(resp.getBody());
         } catch (e) {
             log.error(e, 'Failed to execute query, returning NULL!');
             return [];
@@ -40,7 +40,7 @@ class MedlineDataSource {
         let log = self._log;
 
         if (log.debug())
-            log.debug('parsing response: ' + dataStr);
+            log.debug('parsing response');
 
         let data = JSON.parse(dataStr);
         let items = data.hits.hits;
@@ -49,17 +49,24 @@ class MedlineDataSource {
         for (let itemN = 0; itemN < items.length; itemN++) {
             let item = items[itemN];
 
-            let itemId = item.PMID;
+            let itemId = item._source.PMID;
             let title = item._source.ArticleTitle;
-            let abstract = item._source.Abstract;
+            let description = item._source.Abstract;
             let itemUrl = 'https://www.ncbi.nlm.nih.gov/pubmed/' + itemId;
 
-            result.push({
+            if (description == null) { description = title; }
+
+            let transformed = {
                 title: title,
-                description: abstract,
+                description: description,
                 url: itemUrl,
                 displayUrl: itemUrl
-            })
+            }
+
+            if (log.trace())
+                log.trace('transformed item:\n' + JSON.stringify(transformed, null, ' '));
+
+            result.push(transformed);
         }
 
         return result;

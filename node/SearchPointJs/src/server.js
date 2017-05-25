@@ -45,7 +45,7 @@ module.exports = exports = function (opts) {
 
                 resp.send(result);
             } catch (e) {
-                log.error(e, 'Failed to query keywords!');
+                log.error(e, 'Failed to execute query!');
                 resp.status(500);   // internal server error
             }
 
@@ -65,7 +65,7 @@ module.exports = exports = function (opts) {
 
                 resp.send(sp.rankByPos(parseFloat(pos.x), parseFloat(pos.y), page, queryId));
             } catch (e) {
-                log.error(e, 'Failed to query keywords!');
+                log.error(e, 'Failed to query rank!');
                 resp.status(500);   // internal server error
             }
 

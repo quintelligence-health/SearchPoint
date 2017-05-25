@@ -337,8 +337,6 @@ void TSpKMeansClustUtils::JoinClusters(const TVec<TFltV>& PosV, THash<TInt, TInt
 }
 
 void TSpKMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& ClusterV) {
-	printf("Computing cluters...\n");
-
 	const TSpItemV& ItemV = SpResult->ItemV;
 	THash<TInt, TVec<double>>& SimsH =  SpResult->DocIdClustSimH;
 
@@ -485,8 +483,6 @@ void TSpKMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& C
 			}
 		}
 	}
-
-	printf("Finished!\n");
 }
 
 ///////////////////////////////////////////////
@@ -1144,10 +1140,20 @@ PJsonVal TSpSearchPoint::GenItemsJSon(const TSpItemV& ItemV, const int& Offset, 
 		const TSpItem& Item = ItemV[i];
 		PJsonVal JSonObj = TJsonVal::NewObj();
 
-		JSonObj->AddToObj("title", TJsonVal::NewStr(THtmlLx::GetEscapedStr(Item.Title)));
-		JSonObj->AddToObj("description", TJsonVal::NewStr(THtmlLx::GetEscapedStr(Item.Description)));
-		JSonObj->AddToObj("displayURL", TJsonVal::NewStr(THtmlLx::GetEscapedStr(Item.DisplayUrl)));
-		JSonObj->AddToObj("URL", TJsonVal::NewStr(THtmlLx::GetEscapedStr(Item.Url)));
+        const PJsonVal TitleJson = TJsonVal::NewStr(THtmlLx::GetEscapedStr(Item.Title));
+        const PJsonVal DescJson = TJsonVal::NewStr(THtmlLx::GetEscapedStr(Item.Description));
+        const PJsonVal DispUrlJson = TJsonVal::NewStr(THtmlLx::GetEscapedStr(Item.DisplayUrl));
+        const PJsonVal UrlJson = TJsonVal::NewStr(THtmlLx::GetEscapedStr(Item.Url));
+
+        EAssertR(TitleJson->IsStr(), "Title is not string: " + Item.Title + "!");
+        EAssertR(DescJson->IsStr(), "Description is not string: " + Item.Description + "!");
+        EAssertR(TitleJson->IsStr(), "Display URL is not string: " + Item.DisplayUrl + "!");
+        EAssertR(TitleJson->IsStr(), "URL is not string: " + Item.Url + "!");
+
+		JSonObj->AddToObj("title", TitleJson);
+		JSonObj->AddToObj("description", DescJson);
+		JSonObj->AddToObj("displayURL", DispUrlJson);
+		JSonObj->AddToObj("URL", UrlJson);
 		JSonObj->AddToObj("rank", TJsonVal::NewNum(Item.Id));
 
 		JSonArr->AddToArr(JSonObj);
@@ -1175,7 +1181,12 @@ PJsonVal TSpSearchPoint::CreateClusterJSon(const TSpCluster& Cluster) const {
 		const TStrFltFltTr KwWgtPr = Cluster.RecIdKwWgtFqTrKdV[j].Dat;
 
 		PJsonVal KwJson = TJsonVal::NewObj();
-		KwJson->AddToObj("text", TJsonVal::NewStr(THtmlLx::GetEscapedStr(KwWgtPr.Val1)));
+
+        const PJsonVal TextJson = TJsonVal::NewStr(THtmlLx::GetEscapedStr(KwWgtPr.Val1));
+
+        EAssertR(TextJson->IsStr(), "Cluster text JSON is not string!");
+
+		KwJson->AddToObj("text", TextJson);
 		KwJson->AddToObj("weight", TJsonVal::NewNum(KwWgtPr.Val2));
 		KwJson->AddToObj("fq", TJsonVal::NewNum(KwWgtPr.Val3));
 
@@ -1188,7 +1199,12 @@ PJsonVal TSpSearchPoint::CreateClusterJSon(const TSpCluster& Cluster) const {
 		ChildIdxArr->AddToArr(TJsonVal::NewNum(Cluster.ChildIdxV[j]));
 
 	PJsonVal JSonObj = TJsonVal::NewObj();
-	JSonObj->AddToObj("text", TJsonVal::NewStr(THtmlLx::GetEscapedStr(Cluster.RecIdTopKwKd.Dat)));
+
+    const PJsonVal TextJson = TJsonVal::NewStr(THtmlLx::GetEscapedStr(Cluster.RecIdTopKwKd.Dat));
+
+    EAssertR(TextJson->IsStr(), "Cluster text JSON is not string!");
+
+	JSonObj->AddToObj("text", TextJson);
 	JSonObj->AddToObj("kwords", KwsJson);
 	JSonObj->AddToObj("x", TJsonVal::NewNum(Cluster.Pos.Val1));
 	JSonObj->AddToObj("y", TJsonVal::NewNum(Cluster.Pos.Val2));
@@ -1223,11 +1239,15 @@ PJsonVal TSpSearchPoint::GenClustJSon(const THash<TStr, TSpClusterV>& ClustVH) c
 PJsonVal TSpSearchPoint::GenJSon(const PSpResult& SpResult, const int& Offset, const int& Limit, const bool& SummaryP) const {
 	PJsonVal Result = TJsonVal::NewObj();
 
-	Result->AddToObj("queryId", SpResult->QueryId);
+    const TStr QueryId = SpResult->QueryId;
+
+    EAssertR(!QueryId.Empty(), "The query ID is empty!");
+
+	Result->AddToObj("queryId", QueryId);
 	Result->AddToObj("items", GenItemsJSon(SpResult->ItemV, Offset, Limit));
 	Result->AddToObj("totalItems", TJsonVal::NewNum(SpResult->ItemV.Len()));
 	Result->AddToObj("clusters", SpResult->HasClusters() ?
-    GenClustJSon(SpResult->ClusterVH) : TJsonVal::NewArr());
+                                    GenClustJSon(SpResult->ClusterVH) : TJsonVal::NewArr());
 
 	return Result;
 }
@@ -1303,7 +1323,8 @@ TStr TSpSearchPoint::GenQueryId(const TStr& QueryStr, const TStr& ClusteringKey,
 	return TMd5::GetMd5SigStr(QueryStr + "____" + ClusteringKey + "____" + TInt::GetStr(NResults));
 }
 
-PSpResult TSpSearchPoint::ExecuteQuery(const TStr& QueryStr, const TStr& ClusteringKey, const TInt& NResults) {
+PSpResult TSpSearchPoint::ExecuteQuery(const TStr& QueryStr, const TStr& ClusteringKey,
+        const TInt& NResults) {
 	PSpResult PResult = NULL;
 	try {
 		TStr QueryId = GenQueryId(QueryStr, ClusteringKey, NResults);
@@ -1356,190 +1377,3 @@ PSpQuery TSpQueryManager::GetQuery(const TStr& QueryId) {
 
 	return PQuery;
 }
-
-
-/////////////////////////////////////////////////
-//// Search Point - Demo Server
-//TSpDemoSrv::TSpDemoSrv(const TStr& BaseUrl, const TStr& Path, const PSpSearchPoint& _PSearchPoint):
-//		TSpAbstractServer(BaseUrl, Path, _PSearchPoint) {}
-//
-//PSIn TSpDemoSrv::ProcHtmlPgRq(const TStrKdV& FldNmValPrV, const PSAppSrvRqEnv& RqEnv, TStr& ContTypeStr) {
-//	TStr Path = RqEnv->GetHttpRq()->GetUrl()->GetPathStr();
-//
-//	// throw an axception if anyone tries to access the mobile page directly
-//	EAssert(Path.SearchStr("result_m.html") < 0);
-//
-//	bool IsResultReq = Path.IsStrIn("result.html");
-//
-//	// check for mobile user-agents
-//	PHttpRq HttpRq = RqEnv->GetHttpRq();
-//
-//	PSIn SIn;
-//	if (HttpRq->GetUsrAgentDeviceType() == uadtMobile && IsResultReq) {
-//		// mobile client
-//
-//		// copied from TSASFunFPath::ExecSIn
-//		// construct file name
-//		TStr FNm = FPath;
-//		PUrl Url = RqEnv->GetHttpRq()->GetUrl();
-//		const int PathSegs = Url->GetPathSegs();
-//		if (PathSegs  == 1) {
-//			// nothing specified, do the default
-//			TStr PathSeg = Url->GetPathSeg(0);
-//			if (PathSeg.LastCh() != '/') { FNm += "/"; }
-//			FNm += "index.html";
-//		} else {
-//			// extract file name
-//			for (int PathSegN = 1; PathSegN < PathSegs; PathSegN++) {
-//				FNm += "/"; FNm += Url->GetPathSeg(PathSegN);
-//			}
-//		}
-//
-//		FNm.ChangeStrAll("result.html", "result_m.html");
-//		ContTypeStr = THttp::TextHtmlFldVal;
-//
-//		SIn = TFIn::New(FNm);
-//	} else {
-//		// a regular request from the client, call parent's function
-//		SIn = TSASFunFPath::ExecSIn(FldNmValPrV, RqEnv, ContTypeStr);
-//	}
-//
-//	// reading the parameters
-//	if (IsResultReq) {
-//		// collect the parameters
-//		TStr QueryStr = GetFldVal(FldNmValPrV, TSpAbstractServer::QueryAttrName, "");
-//		TStr ClusteringKey = GetFldVal(FldNmValPrV, TSpAbstractServer::ClusteringUtilsAttrName, "");
-//		int NResults = TMath::Mx(GetFldInt(FldNmValPrV, TSpAbstractServer::NResultsAttrName, TSpAbstractServer::NResultsDefault), TSpAbstractServer::NResultsMin);
-//
-//		// substituting
-//		// if the query string has been found => change the template in the file
-//		// with the query string
-//		{
-//			TStr QueryId = GenQueryID(QueryStr, ClusteringKey, NResults);
-//			// read the whole input stream and put it into
-//			// another stream
-//			TChA StrBuff = "";
-//			TStr LnStr;
-//			while (SIn->GetNextLn(LnStr)) {
-//				LnStr.ChangeStrAll(TSpDemoSrv::ClusteringTargetStr, ClusteringKey);
-//				LnStr.ChangeStrAll(TSpDemoSrv::QueryIDTargetStr, QueryId);
-//				LnStr.ChangeStrAll(TSpDemoSrv::NResultsTargetStr, TInt::GetStr(NResults));
-//
-//				if (!QueryStr.Empty()) {
-//					LnStr.ChangeStrAll(TSpDemoSrv::TitleTargetStr, QueryStr + " - SearchPoint");
-//					LnStr.ChangeStrAll(TSpDemoSrv::QueryTargetStr, QueryStr);
-//				} else {
-//					LnStr.ChangeStrAll(TitleTargetStr, "SearchPoint");
-//					LnStr.ChangeStrAll(QueryTargetStr, "");
-//				}
-//
-//				StrBuff += LnStr + "\n";
-//			}
-//
-//			return TMIn::New(StrBuff);
-//		}
-//	}
-//	return SIn;
-//}
-//
-//
-/////////////////////////////////////////////////
-//// Search Point - Abstract Server
-//PSpResult TSpAbstractServer::ExecuteQuery(const TStr& QueryStr,
-//		const TStr& ClusteringKey, const int NResults) {
-//	return PSearchPoint->ExecuteQuery(QueryStr, ClusteringKey, NResults);
-////	TStr QueryId = GenQueryID(QueryStr, ClusteringKey, NResults);
-////
-////	PSpResult PResult = PSearchPoint->GetResult(QueryId, QueryStr, NResults);
-////	return PSearchPoint->GenClusters(PResult, ClusteringKey);
-//}
-//
-//TStr TSpAbstractServer::GenQueryID(const TStr& QueryStr, const TStr& ClusteringKey, const int& NResults) const {
-//	return PSearchPoint->GenQueryId(QueryStr, ClusteringKey, NResults);
-////	return TMd5::GetMd5SigStr(QueryStr + "____" + ClusteringKey + "____" + TInt::GetStr(NResults));
-//}
-//
-//PSIn TSpAbstractServer::ProcessPosUpdate(const TFltPrV& PosV, const int& Page, const TStr& QueryID) const {
-//	PJsonVal ResultJson = PSearchPoint->ProcPosPageRq(PosV, Page, QueryID);
-//	return TMIn::New(TJsonVal::GetStrFromVal(ResultJson));
-//}
-//
-//PSIn TSpAbstractServer::ProcessKwsUpdate(const TFltPr& Pos, const TStr& QueryId) const {
-//	PJsonVal ResultJson = PSearchPoint->ProcessPosKwRq(Pos, QueryId);
-//	return TMIn::New(TJsonVal::GetStrFromVal(ResultJson));
-//}
-//
-//PSIn TSpAbstractServer::ProcessQuery(const TStr& QueryStr, const TStr& ClusteringKey, const int& NResults) {
-//
-//	PSpResult PResult = ExecuteQuery(QueryStr, ClusteringKey, NResults);
-//	TStr InsertJSon = !PResult.Empty() ? TJsonVal::GetStrFromVal(PSearchPoint->GenJSon(PResult, 0, PSearchPoint->PerPage)) : "";
-//
-//	return TMIn::New(InsertJSon);
-//}
-//
-//PSIn TSpAbstractServer::ExecSIn(const TStrKdV& FldNmValPrV, const PSAppSrvRqEnv& RqEnv, TStr& ContTypeStr) {
-//	TStr Path = RqEnv->GetHttpRq()->GetUrl()->GetPathStr();
-//
-//	if (Path.SearchStr("pos_page.html") >= 0) {
-//		// process change position request
-//		// get the parameters
-//		EAssert(IsFldNm(FldNmValPrV, "x") && IsFldNm(FldNmValPrV, "y") && IsFldNm(FldNmValPrV, TSpAbstractServer::QueryIDAttrName));
-//
-//		// get x, y and page parameters
-//		TFltPrV PosV;
-//		TStr XStr = GetFldVal(FldNmValPrV, "x", "[" + TFlt::GetStr(TSpSearchPoint::MaxClusterX/2) + "]");
-//		TStr YStr = GetFldVal(FldNmValPrV, "y", "[" + TFlt::GetStr(TSpSearchPoint::MaxClusterY/2) + "]");
-//
-//		// x and y are in format [x1,x2,...], [y1,y2,...] so parse them
-//		XStr.DelChAll('[');	XStr.DelChAll(']');
-//		YStr.DelChAll('[');	YStr.DelChAll(']');
-//		TStrV XStrV;	XStr.SplitOnAllAnyCh(",", XStrV);
-//		TStrV YStrV;	YStr.SplitOnAllAnyCh(",", YStrV);
-//		for (int i = 0; i < XStrV.Len(); i++) {
-//			const TStr XStr = XStrV[i];	const TStr YStr = YStrV[i];
-//			const TFlt XFlt = (TStr("Infinity") == XStr) ? TFlt::PInf : XStr.GetFlt();
-//			const TFlt YFlt = (TStr("Infinity") == YStr) ? TFlt::PInf : YStr.GetFlt();
-//			PosV.Add(TFltPr(XFlt, YFlt));
-//		}
-//
-//		TStr PageStr = GetFldVal(FldNmValPrV, "p", "0");
-//		TStr QueryId = GetFldVal(FldNmValPrV, TSpAbstractServer::QueryIDAttrName, "");
-//
-//		int Page = PageStr.GetInt();
-//
-//		return ProcessPosUpdate(PosV, Page, QueryId);
-//	} else if (Path.IsStrIn("query.html")) {
-//		// fetch results and compute clusters
-//		EAssert(IsFldNm(FldNmValPrV, TSpAbstractServer::QueryAttrName));
-//
-//		TStr QueryStr = GetFldVal(FldNmValPrV, TSpAbstractServer::QueryAttrName, "");
-//
-//		// get the engine, clustering and number of results to return
-//		TStr ClusteringKey = GetFldVal(FldNmValPrV, TSpAbstractServer::ClusteringUtilsAttrName, "kmeans");
-//		int NResults = TMath::Mx(GetFldInt(FldNmValPrV, TSpAbstractServer::NResultsAttrName, TSpAbstractServer::NResultsDefault), TSpAbstractServer::NResultsDefault);
-//
-//		return ProcessQuery(QueryStr, ClusteringKey, NResults);
-//	} else if (Path.IsStrIn("keywords.html")) {
-//		// process change position request
-//		// get the parameters
-//		EAssert(IsFldNm(FldNmValPrV, "x") && IsFldNm(FldNmValPrV, "y") && IsFldNm(FldNmValPrV, TSpAbstractServer::QueryIDAttrName));
-//
-//		// get x, y and page parameters
-//		TFltPr Pos;
-//		TStr XStr = GetFldVal(FldNmValPrV, "x", TFlt::GetStr(TSpSearchPoint::MaxClusterX/2));
-//		TStr YStr = GetFldVal(FldNmValPrV, "y", TFlt::GetStr(TSpSearchPoint::MaxClusterY/2));
-//
-//		// x and y are in format [x1,x2,...], [y1,y2,...] so parse them
-//		//XStr.DelChAll('[');	XStr.DelChAll(']');
-//		//YStr.DelChAll('[');	YStr.DelChAll(']');
-//
-//		Pos.Val1 = (TStr("Infinity") == XStr) ? TFlt::PInf : XStr.GetFlt();
-//		Pos.Val2 = (TStr("Infinity") == YStr) ? TFlt::PInf : YStr.GetFlt();
-//
-//		TStr QueryID = GetFldVal(FldNmValPrV, TSpAbstractServer::QueryIDAttrName, "");
-//
-//		return ProcessKwsUpdate(Pos, QueryID);
-//	} else
-//		// a normal page request
-//		return ProcHtmlPgRq(FldNmValPrV, RqEnv, ContTypeStr);
-//}

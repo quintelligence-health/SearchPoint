@@ -3,6 +3,8 @@
 
 # eclipse
 .metadata
+# VIM
+.vimrc
 
 # C/C++
 *.o
