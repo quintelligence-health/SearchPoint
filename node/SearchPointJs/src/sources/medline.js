@@ -17,6 +17,10 @@ class MedlineDataSource {
 
         try {
             let url = `http://${self._host}:${self._port}/pubmedarticleset008/_search?q=${query}&from=0&size=${limit}`;
+
+            if (log.debug())
+                log.debug('Fetching URL: ' + url);
+
             let resp = syncreq(url);
 
             if (resp.statusCode != 200) {
