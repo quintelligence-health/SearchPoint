@@ -125,7 +125,8 @@
                 '../../../qminer/src/glib/mine/mine.h',
                 '../../../qminer/src/glib/mine/mine.cpp',
                 '../../../qminer/src/glib/concurrent/thread.h',
-                '../../../qminer/src/glib/concurrent/thread.cpp'
+                '../../../qminer/src/glib/concurrent/thread.cpp',
+		'../../../qminer/src/third_party/sole/sole.cpp'
             ],        
             'include_dirs': [
                 '../../../qminer/src/glib/base/',
