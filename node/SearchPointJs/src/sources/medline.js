@@ -27,11 +27,17 @@ class MedlineDataSource {
             return self._parseResp(resp);
         } catch (e) {
             log.error(e, 'Failed to execute query, returning NULL!');
-            return null
+            return [];
         }
     }
 
     _parseResp(dataStr) {
+        let self = this;
+        let log = self._log;
+
+        if (log.debug())
+            log.debug('parsing response: ' + dataStr);
+
         let data = JSON.parse(dataStr);
         let items = data.hits.hits;
 
