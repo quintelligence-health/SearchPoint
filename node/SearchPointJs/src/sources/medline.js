@@ -21,7 +21,7 @@ class MedlineDataSource {
             if (log.debug())
                 log.debug('Fetching URL: ' + url);
 
-            let resp = syncreq(url);
+            let resp = syncreq('GET', url);
 
             if (resp.statusCode != 200) {
                 log.warn('Received non-OK status code: %d', resp.statusCode);
