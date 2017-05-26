@@ -1193,6 +1193,12 @@ function Stage(options) {
             that.layers[2].draw();
         },
 
+        drawAll: function () {
+            that.drawTarget();
+            that.drawActors();
+            that.drawProps();
+        },
+
         //sets the targets position
         updateTarget: function (x, y) {
             that.target.updatePosition(x, y);
@@ -1216,7 +1222,7 @@ function Stage(options) {
             that.clusters = [];
             that.layers[2].removeChildren();
             that.layers[2].clear();
-            that.layers[3].clear();
+            // that.layers[3].clear();
 
             that.initClusters();
             if (that.target.prop != null)
@@ -1227,7 +1233,8 @@ function Stage(options) {
             if (that.forward != null) that.addProp(that.forward);
 
             that.history.clear();
-            that.stage.draw();
+            that.drawAll();
+            // that.stage.draw();
             that.drawHierarchy();
         },
 
@@ -1254,7 +1261,7 @@ function Stage(options) {
             logo.onload = function () {
                 context.drawImage(logo, that.width - logo.width, that.height - logo.height);
             };
-            logo.src = "images/logo_small.jpg";
+            logo.src = "images/logo-medline-small.jpg";
 
             that.logo = logo;
         },
@@ -1270,7 +1277,8 @@ function Stage(options) {
             that.addHandlers();
 
             //draw
-            that.stage.draw();
+            // that.stage.draw();
+            that.drawAll();
             that.drawHierarchy();
         }
     }
