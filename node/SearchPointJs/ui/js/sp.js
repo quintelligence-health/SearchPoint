@@ -1261,7 +1261,7 @@ function Stage(options) {
             logo.onload = function () {
                 context.drawImage(logo, that.width - logo.width, that.height - logo.height);
             };
-            logo.src = "images/logo-medline-small.jpg";
+            logo.src = "images/logo_small.jpg";
 
             that.logo = logo;
         },
