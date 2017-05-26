@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 'should use node 0.12.7'
+echo 'should use node 6.10.0'
 
 pushd . > /dev/null
 cd node/SearchPointJs
