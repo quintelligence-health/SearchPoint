@@ -7,7 +7,9 @@
         "path": "./src/sources/medline.js",
         "config": {
             "host": "localhost",
-            "port": 9210
+            "port": 9210,
+            "username": "elastic",
+            "password": "helsinkidemo"
         }
     },
     "logs": [

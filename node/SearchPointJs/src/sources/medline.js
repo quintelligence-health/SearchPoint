@@ -9,6 +9,8 @@ class MedlineDataSource {
         self._log = opts.log;
         self._host = config.host;
         self._port = config.port;
+        self._username = config.username;
+        self._password = config.password;
     }
 
     fetchData(query, limit) {
@@ -16,7 +18,11 @@ class MedlineDataSource {
         let log = self._log;
 
         try {
-            let url = 'http://' + self._host + ':' + self._port + '/pubmedarticleset008/_search?q=' + query + '&from=0&size=' + limit;
+            let url = 'http://' + self._username + ':' +
+                self._password + '@' +
+                self._host + ':' +
+                self._port +
+                '/pubmedarticleset008/_search?q=' + query + '&from=0&size=' + limit;
 
             if (log.debug())
                 log.debug('Fetching URL: ' + url);
