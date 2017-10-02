@@ -144,6 +144,7 @@ private:
 ClassTE(TSpDPMeansClustUtils, TSpClustUtils)//{
 private:
 	static const int KwsPerClust;
+    static const double MaxJoinDist;
 	
 	const double Lambda;
 	const int MaxClusts;
@@ -159,6 +160,8 @@ public:
 	}
 protected:
 	void CalcClusters(const PSpResult& SpResult, TSpClusterV& ClusterV);
+private:
+    void JoinClusters(const TVec<TFltV>& PosV, THash<TInt, TIntV>& MergedH, const double& MinJoinDist = .15) const;
 };
 
 ///////////////////////////////////////////////

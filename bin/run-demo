@@ -1,0 +1,11 @@
+#!/bin/bash
+
+curr_dir=`pwd`
+cd ../node/SearchPointJs
+
+while true; do
+    node main.js config-bing.json
+    sleep 1
+done
+
+cd $curr_dir

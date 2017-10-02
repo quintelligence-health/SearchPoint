@@ -37,6 +37,7 @@ const int TSpDmozClustUtils::MaxClusters = 15;
 const int TSpDmozClustUtils::MaxDepth = 2;
 
 const int TSpDPMeansClustUtils::KwsPerClust = 20;
+const double TSpDPMeansClustUtils::MaxJoinDist = .27;
 
 const int TSpBingEngine::MaxResultsPerQuery = 50;
 
@@ -400,19 +401,20 @@ void TSpKMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& C
 	TSpUtils::TransformInterval(DocPointV, 0.0, TSpSearchPoint::MaxClusterX, 0.0,
 		TSpSearchPoint::MaxClusterY);
 
+    // merge the clusters which are too close
 	THash<TInt, TIntV> MergedH;	JoinClusters(DocPointV, MergedH, TSpKMeansClustUtils::MaxJoinDist);
-	TIntV TopClustIdxV;	MergedH.GetKeyV(TopClustIdxV);
+	TIntV TopClustIdV;	MergedH.GetKeyV(TopClustIdV);
 
-	for (int i = 0; i < TopClustIdxV.Len(); i++) {
-		const int& TopClustIdx = TopClustIdxV[i];
-		TIntV& ClustsIdxs = MergedH.GetDat(TopClustIdx);
-		ClustsIdxs.Ins(0, TopClustIdx);
+	for (int i = 0; i < TopClustIdV.Len(); i++) {
+		const int& TopClustId = TopClustIdV[i];
+		TIntV& MergedClustIdV = MergedH.GetDat(TopClustId);
+		MergedClustIdV.Ins(0, TopClustId);
 
 		// compute the avg coordinates
-		const int NClusts = ClustsIdxs.Len();
+		const int NClusts = MergedClustIdV.Len();
 		TFltPr AvgCoords(0, 0);
 		for (int j = 0; j < NClusts; j++) {
-			const int& ClustIdx = ClustsIdxs[j];
+			const int& ClustIdx = MergedClustIdV[j];
 			const TFltV& ClustPos = DocPointV[ClustIdx];
 
 			AvgCoords.Val1 += ClustPos[0] / NClusts;
@@ -426,7 +428,7 @@ void TSpKMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& C
 		TVec<TKeyDat<TUInt64, TStrFltFltTr>> RecIdKwWgtFqTrKdV(NKwsDefault * NClusts, 0);
 		int CurrClustId = 0;
 		for (int j = 0; j < NClusts; j++) {
-			const int ClustIdx = ClustsIdxs[j];
+			const int ClustIdx = MergedClustIdV[j];
 			PBowDocPartClust PClust = BowDocPart->GetClust(ClustIdx);
 
 			// get keywords
@@ -455,7 +457,7 @@ void TSpKMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& C
 
 		// compute similarities
 		for (int j = 0; j < NClusts; j++) {
-			const int& ClustIdx = ClustsIdxs[j];
+			const int& ClustIdx = MergedClustIdV[j];
 			PBowDocPartClust Clust = BowDocPart->GetClust(ClustIdx);
 			PBowSpV ClustSpV = Clust->GetConceptSpV();
 
@@ -466,9 +468,9 @@ void TSpKMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& C
 
 				const TSpItem& Doc = ItemV[SnippetN];
 				if (!SimsH.IsKey(Doc.Id)) {
-					TVec<double> SimsV(TopClustIdxV.Len(), 0);
+					TVec<double> SimsV(TopClustIdV.Len(), 0);
 
-					for (int h = 0; h < TopClustIdxV.Len(); h++) {
+					for (int h = 0; h < TopClustIdV.Len(); h++) {
 						SimsV.Add(0);
 					}
 
@@ -528,33 +530,33 @@ void TSpDPMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& 
 	PBowDocPart BowDocPart = TBowClust::GetDPMeansPartForDocWgtBs(Notify,
 		BowDocWgtBs, BowDocBs, BowSim, Rnd, Lambda, MinDocsPerClust, MaxClusts, 1, 10000, TBowClustInitScheme::tbcKMeansPP, 4);
 
-	Notify->OnNotify(TNotifyType::ntInfo, "Clusters computed, computing statistics ...");
+	/* Notify->OnNotify(TNotifyType::ntInfo, "Clusters computed, computing statistics ..."); */
 
 	// iterate over discovered clusters
-    for (int i = 0; i < BowDocPart->GetClusts(); i++) {
-        PBowDocPartClust Clust = BowDocPart->GetClust(i);
-        PBowSpV ClustSpV = Clust->GetConceptSpV();
+    /* for (int i = 0; i < BowDocPart->GetClusts(); i++) { */
+    /*     PBowDocPartClust Clust = BowDocPart->GetClust(i); */
+    /*     PBowSpV ClustSpV = Clust->GetConceptSpV(); */
 
-        //for each document calculate the similarity to this cluster
-        for (int j = 0; j < BowDocWgtBs->GetDocs(); j++) {
-            int DocId = BowDocWgtBs->GetDId(j);
-            int SnippetN = BowDocBs->GetDocNm(DocId).GetInt();
+    /*     //for each document calculate the similarity to this cluster */
+    /*     for (int j = 0; j < BowDocWgtBs->GetDocs(); j++) { */
+    /*         int DocId = BowDocWgtBs->GetDId(j); */
+    /*         int SnippetN = BowDocBs->GetDocNm(DocId).GetInt(); */
 
-            const TSpItem& Doc = ItemV[SnippetN];
+    /*         const TSpItem& Doc = ItemV[SnippetN]; */
 
-            //if the similarities aren't in the hash yet => put them there
-            if (!SimsH.IsKey(Doc.Id)) {
-                TVec<double> SimsV;
-                SimsH.AddDat(Doc.Id, SimsV);
-            }
-            TVec<double>& DocSimV = SimsH(Doc.Id);
+    /*         //if the similarities aren't in the hash yet => put them there */
+    /*         if (!SimsH.IsKey(Doc.Id)) { */
+    /*             TVec<double> SimsV; */
+    /*             SimsH.AddDat(Doc.Id, SimsV); */
+    /*         } */
+    /*         TVec<double>& DocSimV = SimsH(Doc.Id); */
 
-            PBowSpV DocSpV = BowDocWgtBs->GetSpV(DocId);
-            TFlt ClustDocSim = BowSim->GetSim(ClustSpV, DocSpV);
+    /*         PBowSpV DocSpV = BowDocWgtBs->GetSpV(DocId); */
+    /*         TFlt ClustDocSim = BowSim->GetSim(ClustSpV, DocSpV); */
 
-            DocSimV.Add(ClustDocSim);
-        }
-    }
+    /*         DocSimV.Add(ClustDocSim); */
+    /*     } */
+    /* } */
 
     Notify->OnNotify(TNotifyType::ntInfo, "Transforming onto a plane ...");
 
@@ -593,7 +595,8 @@ void TSpDPMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& 
 
     PNotify Notify = new TNotify();
     PSVMTrainSet ClustSet = TBowDocBs2TrainSet::NewBowNoCat(ClustSpVV);
-	TVizMapFactory::MakeFlat(ClustSet, TVizDistType::vdtCos, DocPointV, 10000, 1, TMath::Pi / (2*NClusts), false, Notify);
+	/* TVizMapFactory::MakeFlat(ClustSet, TVizDistType::vdtCos, DocPointV, 10000, 1, TMath::Pi / (2*NClusts), false, Notify); */
+    TVizMapFactory::MakeFlat(ClustSet, TVizDistType::vdtCos, DocPointV, 10000, 1, 0, false, Notify);
 
     DocPointV.Del(DocPointV.Len()-1);
 
@@ -602,46 +605,132 @@ void TSpDPMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& 
     TSpUtils::TransformInterval(DocPointV, 0.0, TSpSearchPoint::MaxClusterX,
 		0.0, TSpSearchPoint::MaxClusterY);
 
-    //OK, now I've got the points, I just need to connect them back to the clusters
-    for (int i = 0; i < DocPointV.Len(); i++) {
-        TFltV Point = DocPointV[i];
-        PBowDocPartClust BowDocPartClust = BowDocPart->GetClust(i);
+    THash<TInt, TIntV> MergedH;	JoinClusters(DocPointV, MergedH, TSpDPMeansClustUtils::MaxJoinDist);
+    TIntV TopClustIdV;	MergedH.GetKeyV(TopClustIdV);
 
-        // get keywords
-		PBowSpV ClustSpV = BowDocPartClust->GetConceptSpV();
-        PBowKWordSet ClustKWordSet = ClustSpV->GetKWordSet(BowDocBs)->GetTopKWords(
-			TSpDPMeansClustUtils::KwsPerClust, 1.0);
-        
-		const int NKws = TMath::Mn(ClustKWordSet->GetKWords(), TSpDPMeansClustUtils::KwsPerClust);
-		if (NKws > 1) {
-			TStr TopKeyWord = ClustKWordSet->GetKWordStr(0);
+    int OutClustN = 0;
+    for (int TopClustN = 0; TopClustN < TopClustIdV.Len(); ++TopClustN) {
+        const int& TopClustId = TopClustIdV[TopClustN];
+        TIntV& MergedClustIdV = MergedH.GetDat(TopClustId);
+        MergedClustIdV.Ins(0, TopClustId);
 
-		
-			TVec<TKeyDat<TUInt64, TStrFltFltTr>> RecIdKwWgtFqTrKdV(NKws, 0);
-			TStrV KwV;
-        
-			for (int j = 0; j < NKws; j++) {
-				const TStr Kw = ClustKWordSet->GetKWordStr(j);
+        // compute the avg coordinates
+        const int NClusts = MergedClustIdV.Len();
+        TFltPr AvgCoords(0, 0);
+        for (int MergedClustN = 0; MergedClustN < NClusts; MergedClustN++) {
+            const int& ClustIdx = MergedClustIdV[MergedClustN];
+            const TFltV& ClustPos = DocPointV[ClustIdx];
 
-				if (!TSpSearchPointImpl::KwSuitable(Kw, KwV)) continue;
+            AvgCoords.Val1 += ClustPos[0] / NClusts;
+            AvgCoords.Val2 += ClustPos[1] / NClusts;
+        }
 
-				const TFlt KwWgt = ClustKWordSet->GetKWordWgt(j);
-				const TFlt GlobalKWordFq = BowDocWgtBs->GetWordFq(BowDocBs->GetWId(Kw));
+        // get the keywords
+        /* TVec<TKeyDat<TUInt64, TStrFltFltTr>> RecIdKwWgtFqTrKdV; */
+        /* int CurrClustId = 0; */
+        /* for (int MergedClustN = 0; MergedClustN < NClusts; MergedClustN++) { */
+        /*     const int ClustId = MergedClustIdV[MergedClustN]; */
+        /*     PBowDocPartClust PClust = BowDocPart->GetClust(ClustId); */
 
-				RecIdKwWgtFqTrKdV.Add(TKeyDat<TUInt64, TStrFltFltTr>(
-						(uint64) i, TStrFltFltTr(Kw, KwWgt, GlobalKWordFq)));
-				KwV.Add(Kw);
-			}
+        /*     // get keywords */
+        /*     PBowSpV ClustSpV = PClust->GetConceptSpV(); */
+        /*     PBowKWordSet ClustKWordSet = ClustSpV->GetKWordSet(BowDocBs)-> */
+        /*         GetTopKWords(TSpDPMeansClustUtils::KwsPerClust, 1.0); */
 
-			TSpCluster Cluster(TUInt64StrKd((uint64) i, RecIdKwWgtFqTrKdV[0].Dat.Val1), RecIdKwWgtFqTrKdV, TFltPr(Point[0], Point[1]),
-					TSpClustUtils::MAX_CLUST_RADIUS);
-			ClusterV.Add(Cluster);
-		}
+        /*     const int NKws = TMath::Mn(ClustKWordSet->GetKWords(), TSpDPMeansClustUtils::KwsPerClust); */
+
+        /*     for (int k = 0; k < NKws; k++) { */
+        /*         const TStr Kw = ClustKWordSet->GetKWordStr(k); */
+        /*         const TFlt KwWgt = ClustKWordSet->GetKWordWgt(k); */
+        /*         const double GlobalKWordFq = BowDocWgtBs->GetWordFq(BowDocBs->GetWId(Kw));	// TODO check if this is correct */
+                
+        /*         RecIdKwWgtFqTrKdV.Add(TKeyDat<TUInt64, TStrFltFltTr>( */
+        /*             (uint64) CurrClustId++, TStrFltFltTr(Kw, KwWgt, GlobalKWordFq))); */
+        /*     } */
+        /* } */
+        TVec<TKeyDat<TUInt64, TStrFltFltTr>> RecIdKwWgtFqTrKdV;
+        TStrV KwV;
+
+        for (int MergedClustN = 0; MergedClustN < NClusts; ++MergedClustN) {
+            const int ClustId = MergedClustIdV[MergedClustN];
+            PBowDocPartClust BowDocPartClust = BowDocPart->GetClust(ClustId);
+
+            // get keywords
+            PBowSpV ClustSpV = BowDocPartClust->GetConceptSpV();
+            PBowKWordSet ClustKWordSet = ClustSpV->GetKWordSet(BowDocBs)->GetTopKWords(
+                TSpDPMeansClustUtils::KwsPerClust, 1.0);
+            
+            /* const int NKws = TMath::Mn(ClustKWordSet->GetKWords(), TSpDPMeansClustUtils::KwsPerClust); */
+            const int NKws = TMath::Mn(ClustKWordSet->GetKWords(), TSpDPMeansClustUtils::KwsPerClust);
+
+            if (NKws > 1) {
+                for (int KwN = 0; KwN < NKws; ++KwN) {
+                    const TStr& Kw = ClustKWordSet->GetKWordStr(KwN);
+                    const TFlt& KwWgt = ClustKWordSet->GetKWordWgt(KwN);
+                    const double GlobalKWordFq = BowDocWgtBs->GetWordFq(BowDocBs->GetWId(Kw));	// TODO check if this is correct
+
+                    if (!TSpSearchPointImpl::KwSuitable(Kw, KwV)) continue;
+
+                    RecIdKwWgtFqTrKdV.Add(TKeyDat<TUInt64, TStrFltFltTr>(
+                        (uint64) OutClustN, TStrFltFltTr(Kw, KwWgt, GlobalKWordFq)));
+                    KwV.Add(Kw);
+                }
+            }
+        }
+
+        auto Cmp = [&](const TKeyDat<TUInt64, TStrFltFltTr>& Val1, const TKeyDat<TUInt64, TStrFltFltTr>& Val2) {
+            return Val1.Dat.Val2 > Val2.Dat.Val2; };
+        RecIdKwWgtFqTrKdV.SortCmp(Cmp);
+
+        const double SizeFactor = TMath::Sqrt(2.0 - TMath::Power(2, -(NClusts - 1)));
+        const int ClustUiSize = (int) (TSpClustUtils::MAX_CLUST_RADIUS * SizeFactor);
+        const int MxKws = (int) std::ceil(TSpDPMeansClustUtils::KwsPerClust * SizeFactor);
+
+        if (RecIdKwWgtFqTrKdV.Len() > MxKws) {
+            RecIdKwWgtFqTrKdV.Trunc(MxKws);
+        }
+
+        if (RecIdKwWgtFqTrKdV.Len() > 1) {
+            TSpCluster Cluster(TUInt64StrKd((uint64) OutClustN,
+                        RecIdKwWgtFqTrKdV[0].Dat.Val1), RecIdKwWgtFqTrKdV,
+                    TFltPr(AvgCoords.Val1, AvgCoords.Val2), ClustUiSize);
+            ClusterV.Add(Cluster);
+
+            // compute similarities to the documents
+            for (int MergedClustN = 0; MergedClustN < NClusts; ++MergedClustN) {
+                const int ClustId = MergedClustIdV[MergedClustN];
+                PBowDocPartClust Clust = BowDocPart->GetClust(ClustId);
+                PBowSpV ClustSpV = Clust->GetConceptSpV();
+
+                // for each document calculate the similarity to this cluster
+                for (int DocN = 0; DocN < BowDocWgtBs->GetDocs(); DocN++) {
+                    const int& DocId = BowDocWgtBs->GetDId(DocN);
+                    const int& SnippetN = BowDocBs->GetDocNm(DocId).GetInt();
+
+                    const TSpItem& Doc = ItemV[SnippetN];
+                    if (!SimsH.IsKey(Doc.Id)) {
+                        TVec<double> SimsV(TopClustIdV.Len(), 0);
+
+                        for (int h = 0; h < TopClustIdV.Len(); h++) {
+                            SimsV.Add(0);
+                        }
+
+                        SimsH.AddDat(Doc.Id, SimsV);
+                    }
+                    TVec<double>& DocSimV = SimsH.GetDat(Doc.Id);
+
+                    PBowSpV DocSpV = BowDocWgtBs->GetSpV(DocId);
+                    TFlt ClustDocSim = BowSim->GetSim(ClustSpV, DocSpV);
+
+                    DocSimV[OutClustN] += ClustDocSim / NClusts;
+                }
+            }
+
+            ++OutClustN;
+        }
     }
 
 	// create the central cluster
-//	const TFltV& WordWFqV = BowDocWgtBs->GetWordFqV();
-
     Notify->OnNotify(TNotifyType::ntInfo, "Creating central cluster ...");
 
 	const PBowKWordSet KwSet = AllSpV->GetKWordSet(BowDocBs)->GetTopKWords(50, 1);
@@ -669,6 +758,84 @@ void TSpDPMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& 
 	SpResult->HasBackgroundClust = true;
 
 	Notify->OnNotify(TNotifyType::ntInfo, "Finished!");
+}
+
+void TSpDPMeansClustUtils::JoinClusters(const TVec<TFltV>& PosV, THash<TInt, TIntV>& MergedH, const double& MinJoinDist) const {
+    // join the clusers which are too close together into a single cluster
+    // create a distance matrix
+    MergedH.Clr();
+    THash<TInt, TIntFltH> DistMat;
+    for (TInt i = 0; i < PosV.Len(); i++) {
+        TIntFltH Row;
+        for (TInt j = 0; j < PosV.Len(); j++) {
+            TFltV p1 = PosV[i];
+            TFltV p2 = PosV[j];
+
+            Row.AddDat(j, TMath::Sqrt(TMath::Sqr(p1[0] - p2[0]) + TMath::Sqr(p1[1] - p2[1])));
+        }
+
+        DistMat.AddDat(i, Row);
+    }
+    // quasi hierarchical clustering
+    // picks the forst pair with dist <= MinDist and joins them
+    bool change = true;
+
+    TIntV CurrKeyV;        DistMat.GetKeyV(CurrKeyV);
+    while (change) {
+        change = false;
+        for (int i = 0; i < CurrKeyV.Len(); i++) {
+            const int& RowKey = CurrKeyV[i];
+            const TIntFltH& Row = DistMat(RowKey);
+
+            for (int j = 0; j < CurrKeyV.Len(); j++) {
+                const int& ColKey = CurrKeyV[j];
+                if (RowKey == ColKey) continue;
+                //if (i == j) continue;
+         
+                const double& Dist = Row.GetDat(ColKey);
+                if (Dist < MinJoinDist) {
+                    // adjust the matrix
+                    change = true;
+
+                    const int MinKey = TMath::Mn(RowKey, ColKey);
+                    const int MaxKey = TMath::Mx(RowKey, ColKey);
+
+                    // compute avg dist and remove the cluster with the higher key
+//                    TIntFltH& MinRow = DistMat.GetDat(MinKey);
+//                    TIntFltH& MaxRow = DistMat.GetDat(MaxKey);
+                    for (int k = 0; k < CurrKeyV.Len(); k++) {
+                            if (k == MinKey || k == MaxKey) continue;
+
+                            DistMat(MinKey)(k) = (DistMat(MinKey)(k) + DistMat(MaxKey)(k))/2;
+                            DistMat(k)(MinKey) = (DistMat(k)(MinKey) + DistMat(k)(MaxKey))/2;
+
+                            DistMat(k).DelIfKey(MaxKey);
+                    }
+                    DistMat.DelIfKey(MaxKey);
+
+                    // remember the merge
+                    if (!MergedH.IsKey(MinKey)) {
+                        TIntV MergedV;        
+                        MergedH.AddDat(MinKey, MergedV);
+                    }
+                    MergedH(MinKey).Add(MaxKey);
+                    //remove the max key from the list of current keys
+                    CurrKeyV.DelIfIn(MaxKey);
+                    break;
+                }
+            }
+
+            if (change) break;
+        }
+    }
+
+    for (int i = 0; i < CurrKeyV.Len(); i++) {
+        const int& ClustIdx = CurrKeyV[i];
+        if (!MergedH.IsKey(ClustIdx)) {
+                TIntV EmptyV;
+                MergedH.AddDat(ClustIdx, EmptyV);
+        }
+    }
 }
 
 ///////////////////////////////////////////////
