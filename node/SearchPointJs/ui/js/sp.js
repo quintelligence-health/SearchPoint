@@ -163,8 +163,6 @@ var DataService = function () {
 								for (var clustIdx = 0; clustIdx < nClusts; clustIdx++) {
 									var cluster = clusters[clustIdx];
 									
-									createWc(cluster.kwords, cluster.x, cluster.y);
-									
 									// normalize keyword frequencies
 									var maxFq = -1;
 									for (var kwIdx = 0; kwIdx < cluster.kwords.length; kwIdx++) {
@@ -173,12 +171,12 @@ var DataService = function () {
 									}
 									for (var kwIdx = 0; kwIdx < cluster.kwords.length; kwIdx++)
 										cluster.kwords[kwIdx].fq /= maxFq;
+                                    
+                                    createWc(cluster.kwords, cluster.x, cluster.y);
 								}
 								
 								var centerClust = clusters[nClusts];
 								centerClust.color = centerClustColor;
-								
-								createWc(centerClust.kwords, centerClust.x, centerClust.y, 1.3);
 								
 								// normalize keyword frequencies
 								var maxFq = -1;
@@ -188,6 +186,8 @@ var DataService = function () {
 								}
 								for (var kwIdx = 0; kwIdx < centerClust.kwords.length; kwIdx++)
 									centerClust.kwords[kwIdx].fq /= maxFq;
+                                
+                                createWc(centerClust.kwords, centerClust.x, centerClust.y, 1.3);
 							} else {
 								$.each(clusters, function (idx, cluster) {
 									createWc(cluster.kwords, cluster.x, cluster.y);
@@ -213,7 +213,7 @@ var DataService = function () {
                     $('#data').removeClass('loading');
                     return false;
                 },
-                error: function (jqXHR, textStatus, errorThrown) { /* for now do nothing */ }
+                error: function () { /* for now do nothing */ }
             });
 
             // push the URL
@@ -756,8 +756,15 @@ function Cluster(options) {
 							var color = hsl2rgb(options.color[0], options.color[1], options.color[2]);
 							context.fillStyle = 'rgb(' + color.r + ', ' + color.g + ', ' + color.b + ')';
 						} else {
+                            // console.log(relFq);
+                            // var minSat = 60, maxSat = 100;
+                            var sat = Math.sqrt(kword.weight)*100;
+                            // var sat = Math.pow((100 - Math.min(Math.max(100*relFq, minSat), maxSat))/100, 2)*100;
+                            // console.log(sat);
+                            options.color[1] = sat;
 							var color = hsl2rgb(options.color[0], options.color[1], options.color[2]);
-							context.fillStyle = 'rgba(' + color.r + ', ' + color.g + ', ' + color.b + ',' + Math.pow((100 - Math.min(Math.max(100*kword.fq, 0), 95))/100, 2)*100 + ')';
+                            context.fillStyle = 'rgb(' + color.r + ', ' + color.g + ', ' + color.b + ')';
+							// context.fillStyle = 'rgba(' + color.r + ', ' + color.g + ', ' + color.b + ',' + Math.pow((100 - Math.min(Math.max(100*kword.fq, 0), 95))/100, 2)*100 + ')';
 						}						
 						
 						context.fillText(text, kword.pos[0], kword.pos[1]);
@@ -830,7 +837,7 @@ function Stage(options) {
         history: null,
         logo: null,
         margin: 10,
-        clusterColors: [[0, 100, 50], [27, 100, 50], [100, 100, 50], [174, 100, 50], [240, 100, 50], [312, 100, 50], [150, 100, 50]],
+        clusterColors: [[0, 80, 50], [27, 80, 50], [50, 80, 50], [174, 80, 50], [240, 80, 50], [312, 80, 50], [150, 80, 50]],
         origClusters: [],
         clusters: [],
         width: stageW,

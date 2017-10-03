@@ -100,11 +100,43 @@ public:
 	static void CalcPosition(const double StartX, const double StartY, const double Angle,
 							const double Radius, TFltPr& Pos);
 
+    template <typename TPermFun>
+    static void Permute(TIntV& IdV, const TPermFun& PermFun);
+    static int Factorial(const int n) {
+        int Val = 1;
+        for (int CurrVal = 2; CurrVal <= n; ++CurrVal) {
+            Val *= CurrVal;
+        }
+        return Val;
+    }
+
 	// Transforms all the points in PointV to interval [MinX, MaxX]x[MinY, MaxY]
 	static void TransformInterval(TVec<TFltV>& PointV, double MinX, double MaxX, double MinY, double MaxY);
 
-  virtual ~TSpUtils() {}
+    virtual ~TSpUtils() {}
+
+private:
+    template <typename TPermFun>
+    static void Permute(TIntV& IdV, const int& StartN, const TPermFun& PermFun);
 };
+
+template <typename TPermFun>
+void TSpUtils::Permute(TIntV& IdV, const TPermFun& PermFun) {
+    Permute(IdV, 0, PermFun);
+}
+
+template <typename TPermFun>
+void TSpUtils::Permute(TIntV& IdV, const int& StartN, const TPermFun& PermFun) {
+    if (StartN == IdV.Len()) {
+        PermFun(IdV);
+    } else {
+        for (int SwapN = StartN; SwapN < IdV.Len(); ++SwapN) {
+            std::swap(IdV[StartN], IdV[SwapN]);
+            Permute(IdV, StartN+1, PermFun);
+            std::swap(IdV[StartN], IdV[SwapN]);
+        }
+    }
+}
 
 ///////////////////////////////////////////////
 // SearchPoint-Clustering-Utilities
