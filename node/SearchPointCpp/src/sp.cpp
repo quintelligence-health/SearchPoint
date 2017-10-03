@@ -568,13 +568,11 @@ void TSpDPMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& 
             if (TotalSim > BestPermSim) {
                 BestPermSim = TotalSim;
                 BestIdV = CurrIdV;
-                printf("new best sim: %.5f\n", BestPermSim);
             }
             ++PermN;
         };
         TSpUtils::Permute(ClustIdV, PermFun);
         EAssert(PermN == TSpUtils::Factorial(NClusts));
-        printf("number of permutations: %d\n", PermN);
     }
 	// put the clusters in a circle
 	TVec<TFltV> DocPointV(NClusts+1,0);

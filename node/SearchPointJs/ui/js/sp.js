@@ -156,6 +156,14 @@ var DataService = function () {
                         if (clusters != null) {
                             stage.origClusters = clusters;
                             service.toClientCoords(stage.origClusters);
+
+                            var nClusters = clusters.length;
+                            stage.clusterColors = [];
+                            var step = 2*Math.PI / nClusters;
+                            for (var colorN = 0; colorN < nClusters; ++colorN) {
+                                let angle = colorN*step*360 / (2*Math.PI);
+                                stage.clusterColors.push([angle.toFixed(), 80, 40]);
+                            }
 							
 							if (getClusteringKey() == 'kmeans') {
 								var nClusts = clusters.length - 1;
@@ -837,7 +845,7 @@ function Stage(options) {
         history: null,
         logo: null,
         margin: 10,
-        clusterColors: [[0, 80, 50], [27, 80, 50], [50, 80, 50], [174, 80, 50], [240, 80, 50], [312, 80, 50], [150, 80, 50]],
+        clusterColors: [],
         origClusters: [],
         clusters: [],
         width: stageW,
