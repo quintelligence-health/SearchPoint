@@ -80,7 +80,7 @@ function createWc(words, centerX, centerY, scale) {
 }
 
 function getWordH(word) {
-	return Math.max(minKwSize, word.weight * maxKwSize);
+	return Math.max(minKwSize, word.fq * maxKwSize);
 }
 
 function getWordW(word) {

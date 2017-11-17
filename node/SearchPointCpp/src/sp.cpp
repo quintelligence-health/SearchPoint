@@ -530,45 +530,57 @@ void TSpDPMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& 
 	PBowDocPart BowDocPart = TBowClust::GetDPMeansPartForDocWgtBs(Notify,
 		BowDocWgtBs, BowDocBs, BowSim, Rnd, Lambda, MinDocsPerClust, MaxClusts, 1, 10000, TBowClustInitScheme::tbcKMeansPP, 4);
 
-	/* Notify->OnNotify(TNotifyType::ntInfo, "Clusters computed, computing statistics ..."); */
-
-	// iterate over discovered clusters
-    /* for (int i = 0; i < BowDocPart->GetClusts(); i++) { */
-    /*     PBowDocPartClust Clust = BowDocPart->GetClust(i); */
-    /*     PBowSpV ClustSpV = Clust->GetConceptSpV(); */
-
-    /*     //for each document calculate the similarity to this cluster */
-    /*     for (int j = 0; j < BowDocWgtBs->GetDocs(); j++) { */
-    /*         int DocId = BowDocWgtBs->GetDId(j); */
-    /*         int SnippetN = BowDocBs->GetDocNm(DocId).GetInt(); */
-
-    /*         const TSpItem& Doc = ItemV[SnippetN]; */
-
-    /*         //if the similarities aren't in the hash yet => put them there */
-    /*         if (!SimsH.IsKey(Doc.Id)) { */
-    /*             TVec<double> SimsV; */
-    /*             SimsH.AddDat(Doc.Id, SimsV); */
-    /*         } */
-    /*         TVec<double>& DocSimV = SimsH(Doc.Id); */
-
-    /*         PBowSpV DocSpV = BowDocWgtBs->GetSpV(DocId); */
-    /*         TFlt ClustDocSim = BowSim->GetSim(ClustSpV, DocSpV); */
-
-    /*         DocSimV.Add(ClustDocSim); */
-    /*     } */
-    /* } */
-
     Notify->OnNotify(TNotifyType::ntInfo, "Transforming onto a plane ...");
 
     //transforming the clusters onto a 2D space
     int NClusts = BowDocPart->GetClusts();
+
+    TVec<PBowSpV> ClustSpVV(NClusts+1, 0);
+    for (int i = 0; i < NClusts; i++) {
+        PBowDocPartClust PClust = BowDocPart->GetClust(i);
+        ClustSpVV.Add(PClust->GetConceptSpV());
+    }
+
+    //adding an 'invisible cluster' which will hopefully be in the center
+    TIntV AllDIdV; BowDocBs->GetAllDIdV(AllDIdV);
+    PBowSpV AllSpV = TBowClust::GetConceptSpV(BowDocWgtBs, BowSim, AllDIdV);
+    ClustSpVV.Add(AllSpV);
+
+    PNotify Notify = new TNotify();
+    PSVMTrainSet ClustSet = TBowDocBs2TrainSet::NewBowNoCat(ClustSpVV);
 	
+    TIntV BestIdV;
+    {
+        double BestPermSim = TFlt::NInf;
+        int PermN = 0;
+
+        TIntV ClustIdV;
+        for (int ClustN = 0; ClustN < NClusts; ++ClustN) {
+            ClustIdV.Add(ClustN);
+        }
+
+        auto PermFun = [&](const TIntV& CurrIdV) {
+            double TotalSim = 0;
+            for (int ClustN = 1; ClustN < CurrIdV.Len(); ++ClustN) {
+                TotalSim += ClustSet->DotProduct(CurrIdV[ClustN-1]+1, CurrIdV[ClustN]+1);
+            }
+            TotalSim += ClustSet->DotProduct(CurrIdV.Last()+1, CurrIdV[0]+1);
+            if (TotalSim > BestPermSim) {
+                BestPermSim = TotalSim;
+                BestIdV = CurrIdV;
+            }
+            ++PermN;
+        };
+        TSpUtils::Permute(ClustIdV, PermFun);
+        EAssert(PermN == TSpUtils::Factorial(NClusts));
+    }
 	// put the clusters in a circle
 	TVec<TFltV> DocPointV(NClusts+1,0);
 	double ThetaStart = TRnd(0).GetUniDev()*TMath::Pi*2;
 	double ThetaStep = 2*TMath::Pi / NClusts;
 	for (int i = 0; i < NClusts; i++) {
-		const double Theta = ThetaStart + i*ThetaStep;
+        const int ClustN = BestIdV[i];
+		const double Theta = ThetaStart + ClustN*ThetaStep;
 		
 		TFltV PosV;
 		PosV.Add(cos(Theta));
@@ -581,20 +593,6 @@ void TSpDPMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& 
 	PosV.Add(0);
 	PosV.Add(0);
 	DocPointV.Add(PosV);
-
-    TVec<PBowSpV> ClustSpVV(NClusts+1, 0);
-    for (int i = 0; i < NClusts; i++) {
-        PBowDocPartClust PClust = BowDocPart->GetClust(i);
-        ClustSpVV.Add(PClust->GetConceptSpV());
-    }
-
-    //adding an 'invisible cluster' which will hopefully be in the center
-    TIntV AllDIdV; BowDocBs->GetAllDIdV(AllDIdV);
-    PBowSpV AllSpV = TBowClust::GetConceptSpV(BowDocWgtBs, BowSim, AllDIdV);
-	ClustSpVV.Add(AllSpV);
-
-    PNotify Notify = new TNotify();
-    PSVMTrainSet ClustSet = TBowDocBs2TrainSet::NewBowNoCat(ClustSpVV);
 	/* TVizMapFactory::MakeFlat(ClustSet, TVizDistType::vdtCos, DocPointV, 10000, 1, TMath::Pi / (2*NClusts), false, Notify); */
     TVizMapFactory::MakeFlat(ClustSet, TVizDistType::vdtCos, DocPointV, 10000, 1, 0, false, Notify);
 
@@ -625,29 +623,6 @@ void TSpDPMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& 
             AvgCoords.Val2 += ClustPos[1] / NClusts;
         }
 
-        // get the keywords
-        /* TVec<TKeyDat<TUInt64, TStrFltFltTr>> RecIdKwWgtFqTrKdV; */
-        /* int CurrClustId = 0; */
-        /* for (int MergedClustN = 0; MergedClustN < NClusts; MergedClustN++) { */
-        /*     const int ClustId = MergedClustIdV[MergedClustN]; */
-        /*     PBowDocPartClust PClust = BowDocPart->GetClust(ClustId); */
-
-        /*     // get keywords */
-        /*     PBowSpV ClustSpV = PClust->GetConceptSpV(); */
-        /*     PBowKWordSet ClustKWordSet = ClustSpV->GetKWordSet(BowDocBs)-> */
-        /*         GetTopKWords(TSpDPMeansClustUtils::KwsPerClust, 1.0); */
-
-        /*     const int NKws = TMath::Mn(ClustKWordSet->GetKWords(), TSpDPMeansClustUtils::KwsPerClust); */
-
-        /*     for (int k = 0; k < NKws; k++) { */
-        /*         const TStr Kw = ClustKWordSet->GetKWordStr(k); */
-        /*         const TFlt KwWgt = ClustKWordSet->GetKWordWgt(k); */
-        /*         const double GlobalKWordFq = BowDocWgtBs->GetWordFq(BowDocBs->GetWId(Kw));	// TODO check if this is correct */
-                
-        /*         RecIdKwWgtFqTrKdV.Add(TKeyDat<TUInt64, TStrFltFltTr>( */
-        /*             (uint64) CurrClustId++, TStrFltFltTr(Kw, KwWgt, GlobalKWordFq))); */
-        /*     } */
-        /* } */
         TVec<TKeyDat<TUInt64, TStrFltFltTr>> RecIdKwWgtFqTrKdV;
         TStrV KwV;
 
