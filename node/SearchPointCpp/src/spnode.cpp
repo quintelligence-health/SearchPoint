@@ -16,8 +16,8 @@ void TNodeJsSearchPoint::Init(v8::Handle<v8::Object> Exports) {
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
     // Add all methods, getters and setters here.
-    NODE_SET_PROTOTYPE_METHOD(tpl, "processQuery", _processQuery);
-    NODE_SET_PROTOTYPE_METHOD(tpl, "rankByPos", _rankByPos);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "processQuerySync", _processQuerySync);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "processQuery", _processQuery); NODE_SET_PROTOTYPE_METHOD(tpl, "rankByPos", _rankByPos);
     NODE_SET_PROTOTYPE_METHOD(tpl, "fetchKeywords", _fetchKeywords);
     NODE_SET_PROTOTYPE_METHOD(tpl, "getQueryId", _getQueryId);
 
@@ -65,8 +65,8 @@ TNodeJsSearchPoint* TNodeJsSearchPoint::NewFromArgs(const v8::FunctionCallbackIn
         Notify->OnNotify(TNotifyType::ntInfo, "Loaded!");
 
         TClustUtilH ClustUtilsH;
-        ClustUtilsH.AddDat(DEFAULT_CLUST, TSpDPMeansClustUtils::New(Notify));
-        ClustUtilsH.AddDat("dmoz", TSpDmozClustUtils::New(DmozFilePath));
+        ClustUtilsH.AddDat(DEFAULT_CLUST, new TSpDPMeansClustUtils(Notify));
+        ClustUtilsH.AddDat("dmoz", new TSpDmozClustUtils(DmozFilePath));
 
         // construct the data source
         v8::Local<v8::Value> DsObj = ArgObj->Get(v8::String::NewFromUtf8(Isolate, "dataSource"));
@@ -85,23 +85,115 @@ TNodeJsSearchPoint* TNodeJsSearchPoint::NewFromArgs(const v8::FunctionCallbackIn
     }
 }
 
+TNodeJsSearchPoint::TProcessQueryTask::TProcessQueryTask(const v8::FunctionCallbackInfo<v8::Value>& Args,
+            const bool& _IsAsync) :
+        TNodeTask(Args),
+        QueryStr(TNodeJsUtil::GetArgStr(Args, 0)),
+        ClustKey(TNodeJsUtil::GetArgStr(Args, 1)),
+        Limit(TNodeJsUtil::GetArgInt32(Args, 2)),
+        IsAsync(_IsAsync) {
 
-void TNodeJsSearchPoint::processQuery(const v8::FunctionCallbackInfo<v8::Value>& Args) {
+    TNodeJsSearchPoint* JsSp = ObjectWrap::Unwrap<TNodeJsSearchPoint>(Args.Holder());
+
+    SearchPoint = JsSp->SearchPoint;
+    if (IsAsync) {
+        MainThreadHandle = TNodeJsAsyncUtil::NewBlockingHandle();
+    }
+}
+
+TNodeJsSearchPoint::TProcessQueryTask::~TProcessQueryTask() {
+    if (MainThreadHandle != nullptr) {
+        TNodeJsAsyncUtil::DelHandle(MainThreadHandle);
+    }
+}
+
+v8::Handle<v8::Function> TNodeJsSearchPoint::TProcessQueryTask::GetCallback(const v8::FunctionCallbackInfo<v8::Value>& Args) {
+    return TNodeJsUtil::GetArgFun(Args, 3);
+}
+
+v8::Local<v8::Value> TNodeJsSearchPoint::TProcessQueryTask::WrapResult() {
+    v8::Isolate* Isolate = v8::Isolate::GetCurrent();
+    v8::EscapableHandleScope HandleScope(Isolate);
+    return HandleScope.Escape(TNodeJsUtil::ParseJson(Isolate, ResultJson));
+}
+
+void TNodeJsSearchPoint::TProcessQueryTask::Run() {
+    try {
+        if (IsAsync) {
+            ResultJson = SearchPoint->ExecuteQuery(QueryStr, ClustKey, Limit, MainThreadHandle);
+        } else {
+            ResultJson = SearchPoint->ExecuteQuery(QueryStr, ClustKey, Limit, nullptr);
+        }
+    } catch (const PExcept& Except) {
+        SetExcept(Except);
+    }
+}
+
+TNodeJsSearchPoint::TExecuteQueryTask::TExecuteQueryTask(
+            TNodeJsSearchPoint* _JsSearchPoint,
+            TSpResult& _SpResult,
+            const int& _Limit):
+        JsSp(_JsSearchPoint),
+        SpResult(_SpResult),
+        Limit(_Limit) {}
+
+void TNodeJsSearchPoint::TExecuteQueryTask::Run() {
+    if (JsSp->QueryCallback.IsEmpty()) {
+        return;
+    }
+
     v8::Isolate* Isolate = v8::Isolate::GetCurrent();
     v8::HandleScope HandleScope(Isolate);
 
-    TNodeJsSearchPoint* JsSp = ObjectWrap::Unwrap<TNodeJsSearchPoint>(Args.Holder());
-    TSpSearchPointImpl* SearchPoint = JsSp->SearchPoint;
+    try {
+        const TStr& QueryStr = SpResult.QueryStr;
 
-    const TStr QueryStr = TNodeJsUtil::GetArgStr(Args, 0);
-    const TStr ClustKey = TNodeJsUtil::GetArgStr(Args, 1);
-    const int Limit = TNodeJsUtil::GetArgInt32(Args, 2);
+        // call the callback to get the results
+        v8::Local<v8::Function> Callback = v8::Local<v8::Function>::New(Isolate, JsSp->QueryCallback);
+        PJsonVal ResultJson = TNodeJsUtil::ExecuteJson(Callback, v8::String::NewFromUtf8(Isolate, QueryStr.CStr())->ToObject(), v8::Integer::New(Isolate, Limit)->ToObject());
 
-    const PSpResult SpResult = SearchPoint->ExecuteQuery(QueryStr, ClustKey, Limit);
-    PJsonVal ResultJson = SearchPoint->GenJSon(SpResult, 0, SearchPoint->PerPage);
+        EAssertR(ResultJson->IsArr(), "The result of the callback should be an array!");
 
-    Args.GetReturnValue().Set(TNodeJsUtil::ParseJson(Isolate, ResultJson));
+        TSpItemV& ItemV = SpResult.ItemV;
+
+        // parse the results
+        const int Len = ResultJson->GetArrVals();
+        for (int i = 0; i < Len; i++) {
+            PJsonVal ItemJson = ResultJson->GetArrVal(i);
+
+            EAssertR(ItemJson->GetObjKey("title")->IsDef(), "Title is not defined!");
+            EAssertR(ItemJson->GetObjKey("description")->IsDef(), "Item field description is not defined!");
+            EAssertR(ItemJson->GetObjKey("url")->IsDef(), "Item field url is not defined!");
+            EAssertR(ItemJson->GetObjKey("displayUrl")->IsDef(), "Item field displayUrl is not defined!");
+
+            const TStr& Title = ItemJson->GetObjStr("title");
+            const TStr& Desc = ItemJson->GetObjStr("description");
+            const TStr& Url = ItemJson->GetObjStr("url");
+            const TStr& DispUrl = ItemJson->GetObjStr("displayUrl");
+
+            ItemV.Add(TSpItem(i+1, Title, Desc, Url, DispUrl));
+        }
+    } catch (const PExcept& Except) {
+        TNodeJsUtil::ThrowJsException(Isolate, Except);
+    }
 }
+
+/* void TNodeJsSearchPoint::processQuery(const v8::FunctionCallbackInfo<v8::Value>& Args) { */
+/*     v8::Isolate* Isolate = v8::Isolate::GetCurrent(); */
+/*     v8::HandleScope HandleScope(Isolate); */
+
+/*     TNodeJsSearchPoint* JsSp = ObjectWrap::Unwrap<TNodeJsSearchPoint>(Args.Holder()); */
+/*     TSpSearchPointImpl* SearchPoint = JsSp->SearchPoint; */
+
+/*     const TStr QueryStr = TNodeJsUtil::GetArgStr(Args, 0); */
+/*     const TStr ClustKey = TNodeJsUtil::GetArgStr(Args, 1); */
+/*     const int Limit = TNodeJsUtil::GetArgInt32(Args, 2); */
+
+/*     const PSpResult SpResult = SearchPoint->ExecuteQuery(QueryStr, ClustKey, Limit); */
+/*     PJsonVal ResultJson = SearchPoint->GenJSon(SpResult, 0, SearchPoint->PerPage); */
+
+/*     Args.GetReturnValue().Set(TNodeJsUtil::ParseJson(Isolate, ResultJson)); */
+/* } */
 
 void TNodeJsSearchPoint::rankByPos(const v8::FunctionCallbackInfo<v8::Value>& Args) {
     v8::Isolate* Isolate = v8::Isolate::GetCurrent();
@@ -154,42 +246,17 @@ void TNodeJsSearchPoint::getQueryId(const v8::FunctionCallbackInfo<v8::Value>& A
     Args.GetReturnValue().Set(v8::String::NewFromUtf8(Isolate, QueryId.CStr()));
 }
 
-void TNodeJsSearchPoint::ExecuteQuery(PSpResult& SpResult, const int Limit) {
-    if (QueryCallback.IsEmpty()) { return; }
-
-    v8::Isolate* Isolate = v8::Isolate::GetCurrent();
-    v8::HandleScope HandleScope(Isolate);
-
-    try {
-        const TStr& QueryStr = SpResult->QueryStr;
-
-        // call the callback to get the results
-        v8::Local<v8::Function> Callback = v8::Local<v8::Function>::New(Isolate, QueryCallback);
-        PJsonVal ResultJson = TNodeJsUtil::ExecuteJson(Callback, v8::String::NewFromUtf8(Isolate, QueryStr.CStr())->ToObject(), v8::Integer::New(Isolate, Limit)->ToObject());
-
-        EAssertR(ResultJson->IsArr(), "The result of the callback should be an array!");
-
-        TSpItemV& ItemV = SpResult->ItemV;
-
-        // parse the results
-        const int Len = ResultJson->GetArrVals();
-        for (int i = 0; i < Len; i++) {
-            PJsonVal ItemJson = ResultJson->GetArrVal(i);
-
-            EAssertR(ItemJson->GetObjKey("title")->IsDef(), "Title is not defined!");
-            EAssertR(ItemJson->GetObjKey("description")->IsDef(), "Item field description is not defined!");
-            EAssertR(ItemJson->GetObjKey("url")->IsDef(), "Item field url is not defined!");
-            EAssertR(ItemJson->GetObjKey("displayUrl")->IsDef(), "Item field displayUrl is not defined!");
-
-            const TStr& Title = ItemJson->GetObjStr("title");
-            const TStr& Desc = ItemJson->GetObjStr("description");
-            const TStr& Url = ItemJson->GetObjStr("url");
-            const TStr& DispUrl = ItemJson->GetObjStr("displayUrl");
-
-            ItemV.Add(TSpItem(i+1, Title, Desc, Url, DispUrl));
-        }
-    } catch (const PExcept& Except) {
-        TNodeJsUtil::ThrowJsException(Isolate, Except);
+void TNodeJsSearchPoint::ExecuteQuery(TSpResult& SpResult,
+        const int Limit,
+        void* Param) {
+    if (Param != nullptr) {
+        // must execute on the main thread
+        TMainThreadHandle* Handle = static_cast<TMainThreadHandle*>(Param);
+        TExecuteQueryTask* Task = new TExecuteQueryTask(this, SpResult, Limit);
+        TNodeJsAsyncUtil::ExecuteOnMain(Task, Handle, true);    // true indicates that the task will be deleted
+    } else {
+        TExecuteQueryTask Task(this, SpResult, Limit);
+        Task.Run();
     }
 }
 

@@ -38,18 +38,33 @@ module.exports = exports = function (opts) {
                 if (log.debug())
                     log.debug('Processing query: query: %s, clust: %s, limit: %d ...', query, clustKey, limit);
 
-                var result = sp.processQuery(encodeURI(query), clustKey, limit);
+                // let result = sp.processQuerySync(encodeURI(query), clustKey, limit);
+                // if (log.debug())
+                //     log.debug('Done!');
+                // console.log('number of arguments: ' + arguments.length);
+                // // console.log(JSON.stringify(result, null, ' '));
 
-                if (log.debug())
-                    log.debug('Done!');
+                // console.log('sending result');
+                // resp.send(result);
+                // console.log('result sent!');
+                // resp.end();
 
-                resp.send(result);
+                sp.processQuery(encodeURI(query), clustKey, limit, function (e, result) {
+                    if (e != null) {
+                        log.error(e, 'Failed to execute query!');
+                        resp.status(500);
+                    }
+
+                    if (log.debug())
+                        log.debug('Done!');
+
+                    resp.send(result);
+                    resp.end();
+                })
             } catch (e) {
                 log.error(e, 'Failed to execute query!');
                 resp.status(500);   // internal server error
             }
-
-            resp.end();
         });
 
         app.get(API_PATH + '/rank', function (req, resp) {

@@ -41,7 +41,7 @@ const double TSpDPMeansClustUtils::MaxJoinDist = .27;
 
 const int TSpBingEngine::MaxResultsPerQuery = 50;
 
-const TUInt64 TSpQueryManager::MaxIdleSecs = 1800;	// == 60*30 == 30min
+const TUInt64 TQueryManager::MaxIdleSecs = 1800;	// == 60*30 == 30min
 
 const double TSpSearchPoint::MinDist = 1e-11;
 
@@ -152,7 +152,7 @@ int TSpBingEngine::ParseResponseBody(const TStr& XmlData, TSpItemV& ResultItemV,
 	return ResultTokV.Len();
 }
 
-void TSpBingEngine::ExecuteQuery(PSpResult& SpResult, const int NResults) {
+void TSpBingEngine::ExecuteQuery(TSpResult& SpResult, const int NResults, void*) {
 	try {
 		const int NQueries = (int) ceil((double) NResults/TSpBingEngine::MaxResultsPerQuery);
 
@@ -165,7 +165,7 @@ void TSpBingEngine::ExecuteQuery(PSpResult& SpResult, const int NResults) {
 		do {
 			Limit = TMath::Mn(Remain, TSpBingEngine::MaxResultsPerQuery);
 
-			StepFetched = FetchResults(SpResult->QueryStr, SpResult->ItemV, Limit, Offset);
+			StepFetched = FetchResults(SpResult.QueryStr, SpResult.ItemV, Limit, Offset);
 
 			Offset += StepFetched;
 			Remain -= StepFetched;
@@ -337,9 +337,9 @@ void TSpKMeansClustUtils::JoinClusters(const TVec<TFltV>& PosV, THash<TInt, TInt
     }
 }
 
-void TSpKMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& ClusterV) {
-	const TSpItemV& ItemV = SpResult->ItemV;
-	THash<TInt, TVec<double>>& SimsH =  SpResult->DocIdClustSimH;
+void TSpKMeansClustUtils::CalcClusters(TSpResult& SpResult, TSpClusterV& ClusterV) {
+	const TSpItemV& ItemV = SpResult.ItemV;
+	THash<TInt, TVec<double>>& SimsH =  SpResult.DocIdClustSimH;
 
 	SimsH.Clr();
 
@@ -489,11 +489,11 @@ void TSpKMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& C
 
 ///////////////////////////////////////////////
 // SearchPoint DP-Means Clustering Utilities
-void TSpDPMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& ClusterV) {
+void TSpDPMeansClustUtils::CalcClusters(TSpResult& SpResult, TSpClusterV& ClusterV) {
 	Notify->OnNotify(TNotifyType::ntInfo, "Computing clusters...");
 
-	const TSpItemV& ItemV = SpResult->ItemV;
-	THash<TInt, TVec<double>>& SimsH =  SpResult->DocIdClustSimH;
+	const TSpItemV& ItemV = SpResult.ItemV;
+	THash<TInt, TVec<double>>& SimsH =  SpResult.DocIdClustSimH;
 
 	if (ItemV.Empty()) { return; }
 
@@ -730,7 +730,7 @@ void TSpDPMeansClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& 
 	TSpCluster Cluster(TUInt64StrKd((uint64) DocPointV.Len(), RecIdKwWgtFqTrKdV.Len() > 0 ? RecIdKwWgtFqTrKdV[0].Dat.Val1 : ""), RecIdKwWgtFqTrKdV, TFltPr(.5, .5),
 			TSpClustUtils::MAX_CLUST_RADIUS);
 	ClusterV.Add(Cluster);
-	SpResult->HasBackgroundClust = true;
+	SpResult.HasBackgroundClust = true;
 
 	Notify->OnNotify(TNotifyType::ntInfo, "Finished!");
 }
@@ -980,12 +980,8 @@ TSpDmozClustUtils::TSpDmozClustUtils(const TStr& DmozFilePath):
 		DMozCfy(*TFIn::New(DmozFilePath)),
 		CSec() {}
 
-PSpClustUtils TSpDmozClustUtils::New(const TStr& DmozFilePath) {
-	return new TSpDmozClustUtils(DmozFilePath);
-}
-
-void TSpDmozClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& ClusterV) {
-	const TSpItemV& ResultItemV = SpResult->ItemV;
+void TSpDmozClustUtils::CalcClusters(TSpResult& SpResult, TSpClusterV& ClusterV) {
+	const TSpItemV& ResultItemV = SpResult.ItemV;
 	
 	TVec<TStr> CategoriesAllV;
 	THash<TStr, THash<TInt, TSpItem>> CategoryItemH;
@@ -1081,7 +1077,7 @@ void TSpDmozClustUtils::CalcClusters(const PSpResult& SpResult, TSpClusterV& Clu
 			else
 				SimV.Add(0.0);
 		}
-		SpResult->DocIdClustSimH.AddDat(Item.Id, SimV);
+		SpResult.DocIdClustSimH.AddDat(Item.Id, SimV);
 	}
 }
 
@@ -1089,76 +1085,49 @@ int counter = 0;
 
 ///////////////////////////////////////////////
 // SearchPoint
-PSpResult TSpSearchPoint::GetCachedResult(const TStr& QueryId) {
-	TLock Lck(CacheSection);
-	return IsResultCached(QueryId) ? PQueryManager->GetQuery(QueryId)->PResult : NULL;
-}
 
-void TSpSearchPoint::CacheResult(const PSpResult& Result) {
-	TLock Lck(CacheSection);
-	PQueryManager->NewQuery(Result);
-}
-
-PSpResult TSpSearchPoint::GenClusters(PSpResult& SpResult, const TStr& _ClustUtilsKey) {
-	{
-		TLock Lck(CacheSection);
-		if (PQueryManager->IsQuery(SpResult->QueryId))
-			return GetCachedResult(SpResult->QueryId);
-	}
+void TSpSearchPoint::GenClusters(TSpResult& SpResult, const TStr& _ClustUtilsKey) {
 	//get the clustering utils out of the hash
 	TStr ClustUtilsKey = ClustUtilsH.IsKey(_ClustUtilsKey) ? _ClustUtilsKey : DefaultClustUtilsKey;
-	PSpClustUtils PClustUtils = ClustUtilsH.GetDat(ClustUtilsKey);
+	TSpClustUtils& ClustUtils = *ClustUtilsH.GetDat(ClustUtilsKey);
 
 	// add clusters to results and calc similarities
-	TSpClusterV ClusterV;	PClustUtils->CalcClusters(SpResult, ClusterV);
-	SpResult->ClusterVH.AddDat("default", ClusterV);
-
-	CacheResult(SpResult);
-
-	return SpResult;
+	TSpClusterV ClusterV;	ClustUtils.CalcClusters(SpResult, ClusterV);
+	SpResult.ClusterVH.AddDat("default", ClusterV);
 }
 
 
 void TSpSearchPoint::GetResultsByWSim(const TFltPrV& PosV, const TStr& QueryId, TSpItemV& ResultV, const int& Offset, const int& Limit) {
-	PSpQuery PQuery = NULL;
-	{
-		TLock Lck(CacheSection);
-		if (!PQueryManager->IsQuery(QueryId))
-				return;
-		PQuery = PQueryManager->GetQuery(QueryId);
-	}
+    TQueryHandle QueryHandle;   QueryManager.GetQuery(QueryId, QueryHandle);
+    if (QueryHandle.Empty()) { return; }
 
 	// get all the needed objects out of the Query
-	PSpResult PResultObj = PQuery->PResult;
-	if (!PResultObj->HasClusters())
-		return;
+	const TSpResult& SpResult = QueryHandle.GetQuery().GetResult();
+    if (!SpResult.HasClusters()) {
+        return;
+    }
 
-	GetResultsByWSim(PosV, PResultObj, ResultV, Offset, Limit);
-}
-
-bool TSpSearchPoint::IsResultCached(const TStr& QueryId) {
-	TLock Lck(CacheSection);
-	return PQueryManager->IsQuery(QueryId);
+	GetResultsByWSim(PosV, SpResult, ResultV, Offset, Limit);
 }
 
 TSpSearchPointImpl::TSpSearchPointImpl(const TClustUtilH& _ClustUtilsH,
 		const TStr& _DefaultClustUtilsKey, const int& _PerPage,
 		const PSpDataSource& DataSource, const PNotify& Notify):
-				TSpSearchPoint(_ClustUtilsH, _DefaultClustUtilsKey, _PerPage, DataSource, TSpQueryManager::New(), Notify) {}
+				TSpSearchPoint(_ClustUtilsH, _DefaultClustUtilsKey, _PerPage, DataSource, Notify) {}
 
 
-PSpSearchPoint TSpSearchPointImpl::New(PSpClustUtils& PClustUtils, const int& PerPage, const PSpDataSource& DataSource,
-			const PNotify& Notify) {
-	THash<TStr, PSpClustUtils> UtilsH;
-	TStr DefaultKey = "default";
-	UtilsH.AddDat(DefaultKey, PClustUtils);
-	return TSpSearchPointImpl::New(UtilsH, DefaultKey, PerPage, DataSource, Notify);
-}
+/* PSpSearchPoint TSpSearchPointImpl::New(PSpClustUtils& PClustUtils, const int& PerPage, const PSpDataSource& DataSource, */
+/* 			const PNotify& Notify) { */
+/* 	THash<TStr, PSpClustUtils> UtilsH; */
+/* 	TStr DefaultKey = "default"; */
+/* 	UtilsH.AddDat(DefaultKey, PClustUtils); */
+/* 	return TSpSearchPointImpl::New(UtilsH, DefaultKey, PerPage, DataSource, Notify); */
+/* } */
 
-PSpSearchPoint TSpSearchPointImpl::New(THash<TStr, PSpClustUtils>& ClustUtilsH, TStr& DefaultUtilsKey, const int& PerPage,
-		const PSpDataSource& DataSource, const PNotify& Notify) {
-	return new TSpSearchPointImpl(ClustUtilsH, DefaultUtilsKey, PerPage, DataSource, Notify);
-}
+/* PSpSearchPoint TSpSearchPointImpl::New(THash<TStr, PSpClustUtils>& ClustUtilsH, TStr& DefaultUtilsKey, const int& PerPage, */
+/* 		const PSpDataSource& DataSource, const PNotify& Notify) { */
+/* 	return new TSpSearchPointImpl(ClustUtilsH, DefaultUtilsKey, PerPage, DataSource, Notify); */
+/* } */
 
 bool TSpSearchPointImpl::KwSuitable(const TStr& Kw, const TStrV& KwV) {
 	for (int i = 0; i < KwV.Len(); i++) {
@@ -1170,18 +1139,18 @@ bool TSpSearchPointImpl::KwSuitable(const TStr& Kw, const TStrV& KwV) {
 	return true;
 }
 
-void TSpSearchPointImpl::GetResultsByWSim(const TFltPrV& PosV, const PSpResult& SpResult, TSpItemV& ResultV, const int& Offset, const int& Limit) const {
+void TSpSearchPointImpl::GetResultsByWSim(const TFltPrV& PosV, const TSpResult& SpResult, TSpItemV& ResultV, const int& Offset, const int& Limit) const {
 	TFltPr Pos = PosV[0];
 	double x = Pos.Val1;	
 	double y = Pos.Val2;
 
-	const TSpItemV& ItemV = SpResult->ItemV;
-	const TSpClusterV& ClustV = SpResult->ClusterVH.GetDat("default");
-	const THash<TInt, TVec<double>>& SimsH = SpResult->DocIdClustSimH;
+	const TSpItemV& ItemV = SpResult.ItemV;
+	const TSpClusterV& ClustV = SpResult.ClusterVH.GetDat("default");
+	const THash<TInt, TVec<double>>& SimsH = SpResult.DocIdClustSimH;
 
 	const int NItems = ItemV.Len();
 
-	const int NClusts = SpResult->HasBackgroundClust ? ClustV.Len() - 1 : ClustV.Len();
+	const int NClusts = SpResult.HasBackgroundClust ? ClustV.Len() - 1 : ClustV.Len();
 
 	// calculate distance to each cluster
 	TFltV DistV;
@@ -1230,10 +1199,10 @@ void TSpSearchPointImpl::GetResultsByWSim(const TFltPrV& PosV, const PSpResult& 
 }
 
 
-void TSpSearchPointImpl::GetKwsByWSim(const TFltPr& PosPr, const PSpResult& SpResult, TStrV& KwV) const {
-	const TSpClusterV& ClustV = SpResult->ClusterVH.GetDat("default");
+void TSpSearchPointImpl::GetKwsByWSim(const TFltPr& PosPr, const TSpResult& SpResult, TStrV& KwV) const {
+	const TSpClusterV& ClustV = SpResult.ClusterVH.GetDat("default");
 
-	const int NClusts = SpResult->HasBackgroundClust ? ClustV.Len() - 1 : ClustV.Len();
+	const int NClusts = SpResult.HasBackgroundClust ? ClustV.Len() - 1 : ClustV.Len();
 
 	// calculate the weight of each cluster
 	TFltV ClustWgtV(ClustV.Len(), 0);
@@ -1304,10 +1273,12 @@ PJsonVal TSpSearchPoint::GenItemsJSon(const TSpItemV& ItemV, const int& Offset, 
 	return JSonArr;
 }
 
-TSpSearchPoint::TSpSearchPoint(const THash<TStr, PSpClustUtils>& _ClustUtilsH,
-		const TStr& _DefaultClustUtilsKey, const int& _PerPage, const PSpDataSource& _DataSource,
-		const PSpQueryManager& QueryManager, const PNotify& _Notify):
-		PQueryManager(QueryManager),
+TSpSearchPoint::TSpSearchPoint(
+            const THash<TStr, TSpClustUtils*>& _ClustUtilsH,
+            const TStr& _DefaultClustUtilsKey,
+            const int& _PerPage,
+            const PSpDataSource& _DataSource,
+            const PNotify& _Notify):
 		ClustUtilsH(_ClustUtilsH),
 		DataSource(_DataSource),
 		DefaultClustUtilsKey(_DefaultClustUtilsKey),
@@ -1378,18 +1349,18 @@ PJsonVal TSpSearchPoint::GenClustJSon(const THash<TStr, TSpClusterV>& ClustVH) c
 	return Result;
 }
 
-PJsonVal TSpSearchPoint::GenJSon(const PSpResult& SpResult, const int& Offset, const int& Limit, const bool& SummaryP) const {
+PJsonVal TSpSearchPoint::GenJson(const TSpResult& SpResult, const int& Offset, const int& Limit, const bool& SummaryP) const {
 	PJsonVal Result = TJsonVal::NewObj();
 
-    const TStr QueryId = SpResult->QueryId;
+    const TStr QueryId = SpResult.QueryId;
 
     EAssertR(!QueryId.Empty(), "The query ID is empty!");
 
 	Result->AddToObj("queryId", QueryId);
-	Result->AddToObj("items", GenItemsJSon(SpResult->ItemV, Offset, Limit));
-	Result->AddToObj("totalItems", TJsonVal::NewNum(SpResult->ItemV.Len()));
-	Result->AddToObj("clusters", SpResult->HasClusters() ?
-                                    GenClustJSon(SpResult->ClusterVH) : TJsonVal::NewArr());
+	Result->AddToObj("items", GenItemsJSon(SpResult.ItemV, Offset, Limit));
+	Result->AddToObj("totalItems", TJsonVal::NewNum(SpResult.ItemV.Len()));
+	Result->AddToObj("clusters", SpResult.HasClusters() ?
+                                    GenClustJSon(SpResult.ClusterVH) : TJsonVal::NewArr());
 
 	return Result;
 }
@@ -1397,15 +1368,13 @@ PJsonVal TSpSearchPoint::GenJSon(const PSpResult& SpResult, const int& Offset, c
 ///////////////////////////////////////////////
 // Processes a request to update position
 PJsonVal TSpSearchPoint::ProcPosPageRq(const TFltPrV& PosV, const int& Page, const TStr& QueryId) {
-	PSpQuery PQuery = NULL;
-	{
-		TLock Lck(CacheSection);
-		PQuery = PQueryManager->GetQuery(QueryId);
-	}
+    TQueryHandle QueryHandle;   QueryManager.GetQuery(QueryId, QueryHandle);
+
+    EAssert(!QueryHandle.Empty());
 
 	// get all the needed objects out of the Query
-	PSpResult PResultObj = PQuery->PResult;
-	if (!PResultObj->HasClusters()) {
+	TSpResult& SpResult = QueryHandle.GetQuery().GetResult();
+	if (!SpResult.HasClusters()) {
 		return TJsonVal::NewStr("\"NOT_ENOUGH_DATA\"");
 	}
 
@@ -1424,14 +1393,16 @@ PJsonVal TSpSearchPoint::ProcPosPageRq(const TFltPrV& PosV, const int& Page, con
 }
 
 PJsonVal TSpSearchPoint::ProcessPosKwRq(const TFltPr& Pos, const TStr& QueryId) {
-	PSpQuery PQuery = PQueryManager->GetQuery(QueryId);
+    TQueryHandle QueryHandle;   QueryManager.GetQuery(QueryId, QueryHandle);
 
-	PSpResult PResultObj = PQuery->PResult;
-	if (!PResultObj->HasClusters()) {
+    EAssert(!QueryHandle.Empty());
+
+    TSpResult& Result = QueryHandle.GetQuery().GetResult();
+	if (!Result.HasClusters()) {
 		return TJsonVal::NewStr("\"NOT_ENOUGH_DATA\"");
 	}
 
-	TStrV KwV;	GetKwsByWSim(Pos, PResultObj, KwV);
+	TStrV KwV;	GetKwsByWSim(Pos, Result, KwV);
 
 	// convert to JSON
 	PJsonVal KwsJson = TJsonVal::NewArr();
@@ -1442,80 +1413,121 @@ PJsonVal TSpSearchPoint::ProcessPosKwRq(const TFltPr& Pos, const TStr& QueryId) 
 	return KwsJson;
 }
 
-PSpResult TSpSearchPoint::CreateNewResult(const TStr& QueryId, const TStr& QueryStr) const {
-	return TSpResult::New(QueryId, QueryStr);
-}
+/* PSpResult TSpSearchPoint::CreateNewResult(const TStr& QueryId, const TStr& QueryStr) const { */
+/* 	return TSpResult::New(QueryId, QueryStr); */
+/* } */
 
-PSpResult TSpSearchPoint::GetResult(const TStr& QueryId, const TStr& QueryStr, const TInt& NResults) {
-	PSpResult PResult = GetCachedResult(QueryId);
-	if (!PResult.Empty()) {
-		return PResult;
-	}
-
-	try {
-		PResult = CreateNewResult(QueryId, QueryStr);
-		DataSource->ExecuteQuery(PResult, NResults);
-	} catch (const PExcept& Except) {
-		Notify->OnNotifyFmt(TNotifyType::ntErr, "Failed to get result %s!", Except->GetMsgStr().CStr());
-	}
-	return PResult;
-}
+/* PSpResult TSpSearchPoint::GetResult(const TStr& QueryId, const TStr& QueryStr, */
+/*         const TInt& NResults, void* DataSourceParams) { */
+/* 	return PResult; */
+/* } */
 
 TStr TSpSearchPoint::GenQueryId(const TStr& QueryStr, const TStr& ClusteringKey, const int& NResults) const {
 	return TMd5::GetMd5SigStr(QueryStr + "____" + ClusteringKey + "____" + TInt::GetStr(NResults));
 }
 
-PSpResult TSpSearchPoint::ExecuteQuery(const TStr& QueryStr, const TStr& ClusteringKey,
-        const TInt& NResults) {
-	PSpResult PResult = NULL;
-	try {
-		TStr QueryId = GenQueryId(QueryStr, ClusteringKey, NResults);
+PJsonVal TSpSearchPoint::ExecuteQuery(const TStr& QueryStr, const TStr& ClusteringKey,
+        const TInt& NResults, void* DsParam) {
 
-		PResult = GetResult(QueryId, QueryStr, NResults);
-		return GenClusters(PResult, ClusteringKey);
-	} catch (const PExcept& Except) {
-		Notify->OnNotifyFmt(TNotifyType::ntErr, "Exception while executing query: %s", Except->GetMsgStr().CStr());
-		return PResult;
-	}
+    // get the result
+    const TStr& QueryId = GenQueryId(QueryStr, ClusteringKey, NResults);
+
+    TQueryHandle QueryHandle;   QueryManager.GetQuery(QueryId, QueryHandle);
+
+    // see if the result is already cached
+    if (QueryHandle.Empty()) {
+        // the result is not cached
+        QueryManager.NewQuery(QueryId, QueryStr);
+        QueryManager.GetQuery(QueryId, QueryHandle);
+
+        Assert(!QueryHandle.Empty());
+
+        TSpResult& SpResult = QueryHandle.GetQuery().GetResult();
+
+        DataSource->ExecuteQuery(SpResult, NResults, DsParam);
+        GenClusters(SpResult, ClusteringKey);
+        PJsonVal ResultJson = GenJson(SpResult, 0, PerPage);
+
+        return ResultJson;
+    } else {
+        // use the cached result
+        PJsonVal ResultJson = GenJson(QueryHandle.GetQuery().GetResult(), 0, PerPage);
+        return ResultJson;
+    }
 }
 
 ///////////////////////////////////////////////
+// SearchPoint-Query
+TSpQuery::TSpQuery(const TStr& _QueryId, const TStr& _QueryStr):
+    QueryId(_QueryId),
+    Result(_QueryId, _QueryStr) {}
+
+
+///////////////////////////////////////////////
 // Query Manager
-PSpQuery TSpQueryManager::NewQuery(const PSpResult& PResult) {
-// 	const TStr& QueryId = PResult->QueryId;
-
-//	EAssert(!IsQuery(QueryId));
-
-	PSpQuery PQuery = TSpQuery::New(PResult);
-	QueryH.AddDat(PQuery->Id, PQuery);
-	return PQuery;
+bool TQueryManager::IsQuery(const TStr& QueryId) {
+    TLock Lock(CacheSection);
+    return QueryH.IsKey(QueryId);
 }
 
-void TSpQueryManager::DelOutdated() {
-	if (QueryH.Empty())
-		return;
-
-	TSecTm CurrStamp = TSecTm::GetCurTm();
-
-	// iterate through all the Querys and remove the ones
-	// with (Timestamp - Now) >= MaxIdleTime
-	TVec<TStr> KeyV;	QueryH.GetKeyV(KeyV);
-	for (int i = 0; i < KeyV.Len(); i++) {
-		const TStr& Key = KeyV[i];
-		PSpQuery PQuery = QueryH.GetDat(Key);
-
-		const TSecTm& LastStamp = PQuery->TimeStamp;
-		if (CurrStamp - LastStamp > TSpQueryManager::MaxIdleSecs)
-			QueryH.DelKey(Key);
-	}
+void TQueryManager::NewQuery(const TStr& QueryId, const TStr& QueryStr) {
+    TLock Lock(CacheSection);
+	QueryH.AddDat(QueryId, TQueryWrapper(QueryId, QueryStr));
 }
 
-PSpQuery TSpQueryManager::GetQuery(const TStr& QueryId) {
-	EAssert(QueryH.IsKey(QueryId));
-	PSpQuery& PQuery = QueryH.GetDat(QueryId);
-	PQuery->Timestamp();
+void TQueryManager::GetQuery(const TStr& QueryId, TQueryHandle& Handle) {
+    TLock Lock(CacheSection);
+
+    EAssert(Handle.Empty());
+
+    if (!QueryH.IsKey(QueryId)) { return; }
+
+	TQueryWrapper& QueryWrapper = QueryH.GetDat(QueryId);
+
+    Handle.Set(*this, QueryWrapper.Query);
+
+    // mark the query
+	QueryWrapper.RefreshTimestamp();
+    ++QueryWrapper.RefCount;
 
 	DelOutdated();
+}
 
-	return PQuery;
+void TQueryManager::ReleaseQuery(const TSpQuery& Query) {
+    TLock Lock(CacheSection);
+
+    const TStr& QueryId = Query.GetQueryId();
+
+    EAssert(QueryH.IsKey(QueryId));
+
+    TQueryWrapper& QueryWrapper = QueryH.GetDat(QueryId);
+    --QueryWrapper.RefCount;
+
+    if (QueryWrapper.RefCount == 0 && QueryWrapper.IsDel) {
+        QueryH.DelKey(QueryId);
+    }
+}
+
+void TQueryManager::DelOutdated() {
+    if (QueryH.Empty())
+        return;
+
+    TSecTm CurrStamp = TSecTm::GetCurTm();
+
+    // iterate through all the Querys and remove the ones
+    // with (Timestamp - Now) >= MaxIdleTime
+    TVec<TStr> KeyV;	QueryH.GetKeyV(KeyV);
+    for (int i = 0; i < KeyV.Len(); i++) {
+        const TStr& Key = KeyV[i];
+        TQueryWrapper& QueryWrapper = QueryH.GetDat(Key);
+
+        if (CurrStamp - QueryWrapper.Timestamp > TQueryManager::MaxIdleSecs) {
+            if (QueryWrapper.RefCount == 0) {
+                QueryH.DelKey(Key);
+            } else {
+                QueryWrapper.IsDel = true;
+            }
+        }
+
+    }
 }
