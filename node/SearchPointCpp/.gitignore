@@ -4,3 +4,6 @@
 # node modules
 /node_modules
 /npm-debug.log
+
+# compile script
+/build.sh
