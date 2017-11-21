@@ -1,7 +1,10 @@
 var fs = require('fs');
 var bunyan = require('bunyan');
 var logformat = require('bunyan-format');
-var server = require('./src/server.js');
+
+var server = require('./server');
+let sp = require('./searchpoint');
+let decorations = require('./util/decorations');
 
 function readConfig(fname) {
     var configStr = fs.readFileSync(fname);
@@ -45,43 +48,48 @@ function initLog(streams) {
 // INITIALIZATION FUNCTIONS
 //==================================================================
 
-function initSp(config) {
-    log.info('Initializing SearchPoint ...');
-    var spModule = require(config.modulePath);
-
-    log.debug('Configuring data source');
-    var sourceConfig = config.source;
-    var source = require(sourceConfig.path);
-
-    var unicodePath = config.sp.unicodePath;
-    var dmozPath = config.sp.dmozPath;
-
-    var opts = {
-        dmozPath: dmozPath,
-        unicodePath: unicodePath,
-        dataSource: source({
-            log: log,
-            config: sourceConfig.config
-        })
-        // dataSource: spModule.fetchBing
-    }
-
-    return new spModule.SearchPoint(opts);
-}
-
 try {
     // initialization
     var config = readConfig(process.argv[2]);
     var logStreams = initLogStreams();
     var log = initLog(logStreams);
 
-    var sp = initSp(config);
+    decorations.decorate({
+        log: log
+    })
+
+    var sourceConfig = config.source;
+    var source = require(sourceConfig.path);
+
+    var unicodePath = config.sp.unicodePath;
+    var dmozPath = config.sp.dmozPath;
+
+    let searchpoint = new sp.SearchPoint({
+        settings: {
+            dmozPath: dmozPath,
+            unicodePath: unicodePath,
+        },
+        timeout: config.server.sessionTimeout,
+        log: log,
+        cleanup: 'manual'
+    })
+
     server({
         log: log,
-        sp: sp,
-        port: config.server.port
+        dataSource: source({
+            log: log,
+            config: sourceConfig.config
+        }),
+        sp: searchpoint,
+        port: config.server.port,
+        sessionTimeout: config.server.sessionTimeout
     })
 } catch (e) {
-    log.error(e, 'Unknown exception in main!');
+    if (log == null) {
+        console.error('Exception in main!');
+        console.error(e);
+    } else {
+        log.error(e, 'Unknown exception in main!');
+    }
     process.exit(1);
 }

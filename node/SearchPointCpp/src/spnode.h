@@ -21,6 +21,33 @@
 
 using namespace TSp;
 
+/////////////////////////////
+/// SearchPoint result wrapper
+class TNodeJsSpResult: public node::ObjectWrap {
+    friend class TNodeJsUtil;
+
+    static v8::Persistent<v8::Function> Constructor;
+public:
+    static void Init(v8::Handle<v8::Object> Exports);
+    static const TStr GetClassId() { return "SearchPointResult"; };
+
+public:
+    TSpItemV ItemV;
+    TStr WidgetKey;
+    TSpClusterV ClusterV {};
+    TFltVV ItemClustSimVV {};
+    bool HasBgClust {false};
+
+    // constructor
+    TNodeJsSpResult(const TStr& WidgetKey, const PJsonVal& JsonItemV);
+    static TNodeJsSpResult* NewFromArgs(const v8::FunctionCallbackInfo<v8::Value>& Args);
+
+public:
+    JsDeclareFunction(getClusters);
+    JsDeclareFunction(getByIndexes);
+    JsDeclareProperty(totalItems);
+};
+
 /**
  * Search point javascript instance.
  *
@@ -29,7 +56,7 @@ using namespace TSp;
  * @param {String} unicodePath - path to the unicode definition file
  * @param {String} dmozPath - path to the DMOZ data file
  */
-class TNodeJsSearchPoint: public node::ObjectWrap, public TSpDataSource {
+class TNodeJsSearchPoint: public node::ObjectWrap {
 	friend class TNodeJsUtil;
 
     using TClustUtilH = TSpSearchPoint::TClustUtilH;
@@ -52,70 +79,38 @@ private:
 
     //////////////////////////////
     /// A task for executing queries
-    class TProcessQueryTask : public TNodeTask {
+    class TCreateClustersTask : public TNodeTask {
         // search point object
         TSpSearchPoint* SearchPoint;
-        TMainThreadHandle* MainThreadHandle {nullptr};
-        // parameters
-        TStr QueryStr;
-        TStr ClustKey;
-        int Limit;
-        bool IsAsync;
-        // the result of the operation is stored here
-        PJsonVal ResultJson {};
+        // the object which stores the result
+        TNodeJsSpResult* JsResult;
 
     public:
-        TProcessQueryTask(const v8::FunctionCallbackInfo<v8::Value>& Args,
+        TCreateClustersTask(const v8::FunctionCallbackInfo<v8::Value>& Args,
                 const bool& IsAsync);
-        ~TProcessQueryTask();
 
         v8::Handle<v8::Function> GetCallback(const v8::FunctionCallbackInfo<v8::Value>& Args);
         v8::Local<v8::Value> WrapResult();
         void Run();
-    };
-
-    class TExecuteQueryTask : public TMainThreadTask {
-    private:
-        TNodeJsSearchPoint* JsSp;
-        TSpResult& SpResult;
-        const int& Limit;
-    public:
-        TExecuteQueryTask(TNodeJsSearchPoint* JsSearchPoint,
-                TSpResult& SpResult, const int& Limit);
-
-        void Run();
+        void SetExcept(const PExcept& Except);
     };
 
 public:
 	/**
 	 * Processes the given query and returns the results as a JSON object.
-	 *
-	 * @param {String} query - the search query
-	 * @param {String} clust - the clustering key
-	 * @param {Number} n - the number of results that will be returned
-	 * @returns {Object} - JSON representation of the results
 	 */
 	/* JsDeclareFunction(processQuery); */
-    JsDeclareSyncAsync(processQuerySync, processQuery, TProcessQueryTask);
+    JsDeclareSyncAsync(createClustersSync, createClusters, TCreateClustersTask);
 
 	/**
 	 * Returns re-ranked results based on the passed position.
-	 *
-	 * @param {Number} x - the x coordinate
-	 * @param {Number} y - the y coordinate
-	 * @param {Number} page - the page which will be returned
-	 * @param {String} queryId - identifier of the query
 	 */
-	JsDeclareFunction(rankByPos);
+	JsDeclareFunction(rerank);
 	JsDeclareFunction(fetchKeywords);
-	JsDeclareFunction(getQueryId);
-
-	void ExecuteQuery(TSpResult& SpResult,
-            const int NResults,
-            void* Param);
 
 private:
 	void Clr();
 };
+
 
 #endif /* SRC_SPNODE_H_ */

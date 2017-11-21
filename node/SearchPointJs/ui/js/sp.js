@@ -249,12 +249,12 @@ var DataService = function () {
             $.ajax({
                 type: "GET",
                 url: "api/rank",
-                data: { pos: positions, p: page, qid: queryID },
+                data: { pos: positions, p: page },
                 dataType: "json",
                 async: true,
                 success: function (data, textStatus, jqXHR) {
                     listCont.currPage = page;
-                    items = data.items;
+                    items = data;
                     listCont.drawItems();
                 },
                 error: function (jqXHR, textStatus, errorThrown) { /* for now do nothing */ }

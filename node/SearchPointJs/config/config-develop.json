@@ -4,7 +4,7 @@
 		"dmozPath": "/home/lstopar/workspace/JSI/searchpoint/DMoz.dat"
 	},
     "source": {
-        "path": "./src/sources/bing.js",
+        "path": "./sources/bing.js",
         "config": {
             "apiKeys": [
                 "8cfb996728cb4366b146c54c0a3cf93e"
@@ -23,7 +23,7 @@
 		}
 	],
 	"server": {
-		"port": 8182
-	},
-	"modulePath": "../SearchPointCpp/"
+		"port": 8182,
+        "sessionTimeout": 300000 
+	}
 }

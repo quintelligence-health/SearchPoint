@@ -140,7 +140,8 @@ public:
 	const static int NSamples;
 
 public:
-	virtual void CalcClusters(TSpResult& SpResult, TSpClusterV& ClusterV) = 0;
+	virtual void CalcClusters(const TSpItemV& ItemV, TSpClusterV& ClusterV,
+            TFltVV& DocClustSimVV, bool& HasBgClust) = 0;
 
 	virtual ~TSpClustUtils() {}
 };
@@ -158,7 +159,8 @@ public:
 	TSpKMeansClustUtils() {}
 
 protected:
-	void CalcClusters(TSpResult& SpResult, TSpClusterV& ClusterV);
+	void CalcClusters(const TSpItemV& ItemV, TSpClusterV& ClusterV,
+            TFltVV& DocClustSimVV, bool&);
 private:
 	void JoinClusters(const TVec<TFltV>& PosV, THash<TInt, TIntV>& MergedH, const double& MinJoinDist = .15) const;
 };
@@ -180,14 +182,15 @@ public:
 	TSpDPMeansClustUtils(const PNotify& _Notify=TNullNotify::New(), const double& _Lambda = .05, const int _MaxClusts = 7, const int& _MinDocsPerClust = 5):
 		Lambda(_Lambda), MaxClusts(_MaxClusts), MinDocsPerClust(_MinDocsPerClust), Notify(_Notify) {}
 protected:
-	void CalcClusters(TSpResult& SpResult, TSpClusterV& ClusterV);
+	void CalcClusters(const TSpItemV& ItemV, TSpClusterV& ClusterV,
+            TFltVV& DocClustSimVV, bool& HasBgClust);
 private:
     void JoinClusters(const TVec<TFltV>& PosV, THash<TInt, TIntV>& MergedH, const double& MinJoinDist = .15) const;
 };
 
 ///////////////////////////////////////////////
 // SearchPoint-DMoz-Clustering-Utilities
-ClassTE(TSpDmozClustUtils, TSpClustUtils)//{
+class TSpDmozClustUtils : public TSpClustUtils {
 private:
 	class TSpDmozCluster {
 	public:
@@ -224,7 +227,7 @@ private:
 public:
 	TSpDmozClustUtils(const TStr& DmozFilePath);
 
-	void CalcClusters(TSpResult& SpResult, TSpClusterV& ClusterV);
+	void CalcClusters(const TSpItemV& ItemV, TSpClusterV& ClusterV, TFltVV& DocClustSimVV, bool&);
 
 private:
 	int Prune(TSpDmozCluster& Root);
@@ -241,139 +244,8 @@ private:
 };
 
 ///////////////////////////////////////////////
-// SearchPoint-Search-Engine
-ClassTP(TSpDataSource, PSpDataSource)//{
-protected:
-	const static int DEFAULT_LIMIT;
-
-	PNotify Notify;
-public:
-	TSpDataSource(const PNotify& Notify=TStdNotify::New());
-
-	virtual void ExecuteQuery(TSpResult& PResult, const int NResults, void*) = 0;
-	virtual ~TSpDataSource() {}
-};
-
-///////////////////////////////////////////////
-// SearchPoint-Bing-Search-Engine
-ClassTE(TSpBingEngine, TSpDataSource)//{
-private:
-	const static int MaxResultsPerQuery;
-
-	TStrV BingApiKeyV;
-
-	TRnd Rnd;
-
-public:
-	TSpBingEngine(const TStrV& BingApiKeyV, const PNotify& Notify);
-	static PSpDataSource New(const TStrV& BingApiKeyV, const PNotify& Notify)
-		{ return new TSpBingEngine(BingApiKeyV, Notify); }
-
-protected:
-	void ExecuteQuery(TSpResult& PResult, const int NResults, void*);
-
-private:
-	int ParseResponseBody(const TStr& XmlData, TSpItemV& ItemV, const int& Offset) const;
-	void CreateTagNameHash(THash<TStr, TChA>& TagHash) const;
-	int FetchResults(const TStr& Query, TSpItemV& ItemV, const int& Limit, const int& Offset);
-
-	static FILE* OpenPipe(const TStr& ApiKey, const TStr& Query,
-			const int& Offset, const int& Limit, const PNotify& Notify);
-	static void ClosePipe(FILE* Pipe);
-};
-
-///////////////////////////////////////////////
-// SearchPoint-Query
-class TSpQuery {
-private:
-	TStr QueryId;
-    TSpResult Result;
-
-public:
-    TSpQuery(): QueryId(), Result() {}
-    TSpQuery(const TStr& QueryId, const TStr& QueryStr);
-
-    TSpResult& GetResult() { return Result; }
-    const TStr& GetQueryId() const { return QueryId; }
-};
-
-///////////////////////////////////////////////
-// SearchPoint-Query Manager
-class TQueryManager {
-private:
-    class TQueryWrapper {
-    public: // TODO make private and define getters
-        TSpQuery Query;
-        int RefCount {0};
-        uint64 Timestamp {TSecTm::GetCurTm()};
-        bool IsDel {false};
-
-        TQueryWrapper(): Query() {}
-        TQueryWrapper(const TStr& QueryId, const TStr& QueryStr):
-                Query(QueryId, QueryStr) {}
-
-        /// refreshes the time the query was last accessed
-        void RefreshTimestamp() {
-            Timestamp = TSecTm::GetCurTm();
-        }
-    };
-
-	const static TUInt64 MaxIdleSecs;
-
-	THash<TStr, TQueryWrapper> QueryH {};
-    TCriticalSection CacheSection {};
-
-public:
-    class TQueryHandle {
-    private:
-        TQueryManager* QueryManager {nullptr};
-        TSpQuery* Query {nullptr};
-
-    public:
-        TQueryHandle() {}
-
-        // delete copy constructors and assignments so that release
-        // doesn't get called multiple times
-        TQueryHandle(const TQueryHandle&) = delete;
-        TQueryHandle& operator =(const TQueryHandle&) = delete;
-
-        ~TQueryHandle() {
-            if (Query != nullptr) {
-                QueryManager->ReleaseQuery(*Query);
-            }
-        }
-
-        bool Empty() const { return Query == nullptr; }
-        void Set(TQueryManager& _QueryManager, TSpQuery& _SpQuery) {
-            EAssert(Empty());
-            QueryManager = &_QueryManager;
-            Query = &_SpQuery;
-        }
-        TSpQuery& GetQuery() {
-            EAssert(!Empty());
-            return *Query;
-        }
-    };
-
-    TQueryManager() {}
-
-    /// checks if the query is already cached
-    bool IsQuery(const TStr& QueryId);
-    /// creates and caches a new query
-  	void NewQuery(const TStr& QueryId, const TStr& QueryStr);
-    /// puts the cached query into the handle, if the query is not
-    /// yet cached the handle is left empty
-    void GetQuery(const TStr& QueryId, TQueryHandle& Handle);
-
-private:
-    void ReleaseQuery(const TSpQuery&);
-	void DelOutdated();
-};
-
-///////////////////////////////////////////////
 // SearchPoint
 class TSpSearchPoint {
-    using TQueryHandle = TQueryManager::TQueryHandle;
 public:
     using TClustUtilH = THash<TStr, TSpClustUtils*>;    // TODO change this to something else
 
@@ -383,10 +255,7 @@ public:
 	const static double MinDist;
 
 private:
-	TQueryManager QueryManager {};
 	TClustUtilH ClustUtilsH;
-
-	PSpDataSource DataSource;
 
 	TStr DefaultClustUtilsKey;
 	int PerPage;
@@ -398,7 +267,6 @@ private:
 public:
 	TSpSearchPoint(const TClustUtilH& ClustUtilsH,
 			const TStr& DefaultClustUtilsKey, const int& _PerPage,
-			const PSpDataSource& DataSource,
 			const PNotify& Notify=TNullNotify::New());
 
     virtual ~TSpSearchPoint() {
@@ -415,14 +283,14 @@ public:
 	// If the query isn't cached, it computes clusters and similarities and creates
 	// and caches a new query and returns it's result.
 	// If the query is already cached, it just returns it's result.
-	virtual void GenClusters(TSpResult& SpResult, const TStr& ClustUtilsKey = TStr());
-	virtual PJsonVal ProcPosPageRq(const TFltPrV& PosV, const int& Page, const TStr& QueryID);
-	virtual PJsonVal ProcessPosKwRq(const TFltPr& PosV, const TStr& QueryId);
+	void GenClusters(const TStr& WidgetKey, const TSpItemV& ItemV,
+            TSpClusterV& ClustV, TFltVV& DocClustSimVV, bool& HasBgClust);
+	void ProcPosPageRq(const TFltPrV& PosV, const TSpClusterV& ClusterV,
+            const TFltVV& ItemClustSimVV, const bool& HasBgClust, const int& Page,
+            TIntV& PermuteV);
+	PJsonVal ProcessPosKwRq(const TFltPr& Pos, const TSpClusterV& ClustV,
+            const bool& HasBgClust);
 
-public:
-	TStr GenQueryId(const TStr& QueryStr, const TStr& ClusteringKey, const int& NResults) const;
-	PJsonVal ExecuteQuery(const TStr& QueryStr, const TStr& ClusteringKey, const TInt& NResults,
-            void* DataSourceParam);
 
 
 	virtual PJsonVal GenJson(const TSpResult& SpResult, const int& Offset = 0, const int& Limit = -1, const bool& SummaryP = false) const;
@@ -432,9 +300,11 @@ public:
 	/////////////////////////////////////////////////////////////////////////////////
 	// Calculates a weighted sum of the distance and similarity to each cluster and  
 	// sorts the ResultItemV accordingly
-	virtual void GetResultsByWSim(const TFltPrV& PosV, const TSpResult& SpResult, TSpItemV& ResultV, const int& Offset = 0, const int& Limit = -1) const = 0;
-	virtual void GetResultsByWSim(const TFltPrV& PosV, const TStr& QueryId, TSpItemV& ResultV, const int& Offset = 0, const int& Limit = -1);
-	virtual void GetKwsByWSim(const TFltPr& PosPr, const TSpResult& SpResult, TStrV& KwV) const = 0;
+	virtual void GetResultsByWSim(const TFltPrV& PosV, const TSpClusterV& ClustV, 
+            const TFltVV& ItemClustSimVV, const bool& HasBgClust,
+            const int& Offset, const int& Limit, TIntV& PermuteV) const = 0;
+	virtual void GetKwsByWSim(const TFltPr& PosPr, const TSpClusterV& ClustV,
+            const bool& HasBgClust, TStrV& KwV) const = 0;
 };
 
 
@@ -446,7 +316,6 @@ public:
             const TClustUtilH& ClustUtilsH,
             const TStr& DefaultClustUtilsKey,
             const int& PerPage,
-			const PSpDataSource& DataSource,
             const PNotify& Notify=TNullNotify::New()
     );
 
@@ -457,8 +326,11 @@ public:
 
 	static bool KwSuitable(const TStr& Kw, const TStrV& KwV);
 
-	void GetResultsByWSim(const TFltPrV& PosV, const TSpResult& SpResult, TSpItemV& ResultV, const int& Offset = 0, const int& Limit = -1) const;
-	void GetKwsByWSim(const TFltPr& PosPr, const TSpResult& SpResult, TStrV& KwV) const;
+	void GetResultsByWSim(const TFltPrV& PosV, const TSpClusterV& ClustV, 
+            const TFltVV& ItemClustSimVV, const bool& HasBgClust,
+            const int& Offset, const int& Limit, TIntV& PermuteV) const;
+	void GetKwsByWSim(const TFltPr& PosPr, const TSpClusterV& ClustV,
+            const bool& HasBgClust, TStrV& KwV) const;
 };
 }
 

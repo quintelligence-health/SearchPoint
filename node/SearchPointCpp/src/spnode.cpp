@@ -2,6 +2,160 @@
 
 using namespace TSp;
 
+v8::Persistent<v8::Function> TNodeJsSpResult::Constructor;
+
+void TNodeJsSpResult::Init(v8::Handle<v8::Object> Exports) {
+    v8::Isolate* Isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope HandleScope(Isolate);
+
+    v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New(Isolate, TNodeJsUtil::_NewJs<TNodeJsSpResult>);
+    // child will have the same properties and methods, but a different callback: _NewCpp
+    v8::Local<v8::FunctionTemplate> child = v8::FunctionTemplate::New(Isolate, TNodeJsUtil::_NewCpp<TNodeJsSpResult>);
+    child->Inherit(tpl);
+
+    child->SetClassName(v8::String::NewFromUtf8(Isolate, GetClassId().CStr()));
+    // ObjectWrap uses the first internal field to store the wrapped pointer
+    child->InstanceTemplate()->SetInternalFieldCount(1);
+
+    tpl->SetClassName(v8::String::NewFromUtf8(Isolate, GetClassId().CStr()));
+    // ObjectWrap uses the first internal field to store the wrapped pointer.
+    tpl->InstanceTemplate()->SetInternalFieldCount(1);
+
+    // Add all methods, getters and setters here.
+    NODE_SET_PROTOTYPE_METHOD(tpl, "getClusters", _getClusters);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "getByIndexes", _getByIndexes);
+
+    tpl->InstanceTemplate()->SetAccessor(v8::String::NewFromUtf8(Isolate, "totalItems"), _totalItems);
+
+    // This has to be last, otherwise the properties won't show up on the object in JavaScript	
+    // Constructor is used when creating the object from C++
+    Constructor.Reset(Isolate, child->GetFunction());
+    // we need to export the class for calling using "new SearchPointResult(...)"
+    Exports->Set(v8::String::NewFromUtf8(Isolate, GetClassId().CStr()), tpl->GetFunction());
+}
+
+TNodeJsSpResult::TNodeJsSpResult(const TStr& _WidgetKey, const PJsonVal& JsonItemV):
+        ItemV(JsonItemV->GetArrVals(), 0),
+        WidgetKey(_WidgetKey) {
+
+    const int NItems = JsonItemV->GetArrVals();
+    for (int ItemN = 0; ItemN < NItems; ++ItemN) {
+        const PJsonVal& ItemJson = JsonItemV->GetArrVal(ItemN);
+
+        EAssertR(ItemJson->GetObjKey("title")->IsDef(), "Title is not defined!");
+        EAssertR(ItemJson->GetObjKey("description")->IsDef(), "Item field description is not defined!");
+        EAssertR(ItemJson->GetObjKey("url")->IsDef(), "Item field url is not defined!");
+        EAssertR(ItemJson->GetObjKey("displayUrl")->IsDef(), "Item field displayUrl is not defined!");
+
+        ItemV.Add(TSpItem(
+            ItemN,
+            ItemJson->GetObjStr("title"),
+            ItemJson->GetObjStr("description"),
+            ItemJson->GetObjStr("url"),
+            ItemJson->GetObjStr("displayUrl")
+        ));
+    }
+}
+
+TNodeJsSpResult* NewFromArgs(const v8::FunctionCallbackInfo<v8::Value>& Args) {
+    const TStr WidgetKey = TNodeJsUtil::GetArgStr(Args, 0);
+    const PJsonVal JsonItemV = TNodeJsUtil::GetArgJson(Args, 1);
+    return new TNodeJsSpResult(WidgetKey, JsonItemV);
+}
+
+void TNodeJsSpResult::getClusters(const v8::FunctionCallbackInfo<v8::Value>& Args) {
+    v8::Isolate* Isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope HandleScope(Isolate);
+
+    TNodeJsSpResult* JsResult = ObjectWrap::Unwrap<TNodeJsSpResult>(Args.Holder());
+
+    PJsonVal JsonClusterV = TJsonVal::NewArr();
+
+    for (int ClusterN = 0; ClusterN < JsResult->ClusterV.Len(); ++ClusterN) {
+        const TSpCluster& Cluster = JsResult->ClusterV[ClusterN];
+
+        PJsonVal ClusterJson = TJsonVal::NewObj();
+
+        PJsonVal KwsJson = TJsonVal::NewArr();
+        for (int j = 0; j < Cluster.RecIdKwWgtFqTrKdV.Len(); j++) {
+            const TStrFltFltTr KwWgtPr = Cluster.RecIdKwWgtFqTrKdV[j].Dat;
+
+            PJsonVal KwJson = TJsonVal::NewObj();
+
+            const PJsonVal TextJson = TJsonVal::NewStr(THtmlLx::GetEscapedStr(KwWgtPr.Val1));
+
+            EAssertR(TextJson->IsStr(), "Cluster text JSON is not string!");
+
+            KwJson->AddToObj("text", TextJson);
+            KwJson->AddToObj("weight", TJsonVal::NewNum(KwWgtPr.Val2));
+            KwJson->AddToObj("fq", TJsonVal::NewNum(KwWgtPr.Val3));
+
+            KwsJson->AddToArr(KwJson);
+        }
+
+        //children
+        PJsonVal ChildIdxArr = TJsonVal::NewArr();
+        for (int j = 0; j < Cluster.ChildIdxV.Len(); j++)
+            ChildIdxArr->AddToArr(TJsonVal::NewNum(Cluster.ChildIdxV[j]));
+
+        const PJsonVal TextJson = TJsonVal::NewStr(THtmlLx::GetEscapedStr(Cluster.RecIdTopKwKd.Dat));
+
+        EAssertR(TextJson->IsStr(), "Cluster text JSON is not string!");
+
+        ClusterJson->AddToObj("text", TextJson);
+        ClusterJson->AddToObj("kwords", KwsJson);
+        ClusterJson->AddToObj("x", TJsonVal::NewNum(Cluster.Pos.Val1));
+        ClusterJson->AddToObj("y", TJsonVal::NewNum(Cluster.Pos.Val2));
+        ClusterJson->AddToObj("size", TJsonVal::NewNum(Cluster.Size));
+        ClusterJson->AddToObj("childIdxs", ChildIdxArr);
+
+        JsonClusterV->AddToArr(ClusterJson);
+    }
+
+    PJsonVal Result = TJsonVal::NewArr();
+    Result->AddToArr(JsonClusterV);
+
+    Args.GetReturnValue().Set(TNodeJsUtil::ParseJson(Isolate, Result));
+}
+
+void TNodeJsSpResult::getByIndexes(const v8::FunctionCallbackInfo<v8::Value>& Args) {
+    v8::Isolate* Isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope HandleScope(Isolate);
+
+    TNodeJsSpResult* JsResult = ObjectWrap::Unwrap<TNodeJsSpResult>(Args.Holder());
+
+    TIntV IdxV; TNodeJsUtil::GetArgIntV(Args, 0, IdxV);
+
+    PJsonVal JsonItemV = TJsonVal::NewArr();
+    for (int ValN = 0; ValN < IdxV.Len(); ++ValN) {
+        EAssert(0 <= ValN && ValN < IdxV.Len());
+        const int ItemN = IdxV[ValN];
+        EAssert(0 <= ItemN && ItemN < JsResult->ItemV.Len());
+        const TSpItem& Item = JsResult->ItemV[ItemN];
+
+        PJsonVal ItemJson = TJsonVal::NewObj();
+        ItemJson->AddToObj("title", THtmlLx::GetEscapedStr(Item.Title)); // TODO make consistent with input
+        ItemJson->AddToObj("description", THtmlLx::GetEscapedStr(Item.Description));
+        ItemJson->AddToObj("displayURL", THtmlLx::GetEscapedStr(Item.DisplayUrl));
+        ItemJson->AddToObj("URL", THtmlLx::GetEscapedStr(Item.Url));
+        ItemJson->AddToObj("rank", ItemN);
+
+        JsonItemV->AddToArr(ItemJson);
+    }
+
+    Args.GetReturnValue().Set(TNodeJsUtil::ParseJson(Isolate, JsonItemV));
+}
+
+void TNodeJsSpResult::totalItems(v8::Local<v8::String> Name, const v8::PropertyCallbackInfo<v8::Value>& Info) {
+    v8::Isolate* Isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope HandleScope(Isolate);
+
+    TNodeJsSpResult* JsResult = ObjectWrap::Unwrap<TNodeJsSpResult>(Info.Holder());
+    Info.GetReturnValue().Set(v8::Integer::New(Isolate, JsResult->ItemV.Len()));
+}
+
+///////////////////////////////////////
+/// SearchPoint
 const TStr TNodeJsSearchPoint::DEFAULT_CLUST = "kmeans";
 const TStr TNodeJsSearchPoint::JS_DATA_SOURCE_TYPE = "func";
 const int TNodeJsSearchPoint::PER_PAGE = 10;
@@ -16,10 +170,11 @@ void TNodeJsSearchPoint::Init(v8::Handle<v8::Object> Exports) {
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
     // Add all methods, getters and setters here.
-    NODE_SET_PROTOTYPE_METHOD(tpl, "processQuerySync", _processQuerySync);
-    NODE_SET_PROTOTYPE_METHOD(tpl, "processQuery", _processQuery); NODE_SET_PROTOTYPE_METHOD(tpl, "rankByPos", _rankByPos);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "createClustersSync", _createClustersSync);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "createClusters", _createClusters);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "rerank", _rerank);
     NODE_SET_PROTOTYPE_METHOD(tpl, "fetchKeywords", _fetchKeywords);
-    NODE_SET_PROTOTYPE_METHOD(tpl, "getQueryId", _getQueryId);
+    /* NODE_SET_PROTOTYPE_METHOD(tpl, "getQueryId", _getQueryId); */
 
     Exports->Set(v8::String::NewFromUtf8(Isolate, GetClassId().CStr()), tpl->GetFunction());
 }
@@ -30,7 +185,7 @@ TNodeJsSearchPoint::TNodeJsSearchPoint(const TClustUtilH& ClustUtilH, const TStr
     v8::HandleScope HandleScope(Isolate);
 
     QueryCallback.Reset(Isolate, DataSourceCall);
-    SearchPoint = new TSpSearchPointImpl(ClustUtilH, DEFAULT_CLUST, PER_PAGE, PSpDataSource(this));
+    SearchPoint = new TSpSearchPointImpl(ClustUtilH, DEFAULT_CLUST, PER_PAGE);
 }
 
 
@@ -68,150 +223,88 @@ TNodeJsSearchPoint* TNodeJsSearchPoint::NewFromArgs(const v8::FunctionCallbackIn
         ClustUtilsH.AddDat(DEFAULT_CLUST, new TSpDPMeansClustUtils(Notify));
         ClustUtilsH.AddDat("dmoz", new TSpDmozClustUtils(DmozFilePath));
 
-        // construct the data source
-        v8::Local<v8::Value> DsObj = ArgObj->Get(v8::String::NewFromUtf8(Isolate, "dataSource"));
-
-        if (DsObj->IsFunction()) {
-            v8::Local<v8::Function> DsFun = v8::Handle<v8::Function>::Cast(DsObj);
-            return new TNodeJsSearchPoint(ClustUtilsH, DEFAULT_CLUST, PER_PAGE, DsFun);
-        } else {
-            const PJsonVal DataSrcJson = ArgJson->GetObjKey("datasource");
-            TStrV ApiKeyV;  DataSrcJson->GetObjStrV("apiKeys", ApiKeyV);
-            return new TNodeJsSearchPoint(new TSpSearchPointImpl(ClustUtilsH, DEFAULT_CLUST, PER_PAGE, TSpBingEngine::New(ApiKeyV, Notify)));
-        }
+        return new TNodeJsSearchPoint(new TSpSearchPointImpl(ClustUtilsH, DEFAULT_CLUST, PER_PAGE));
     } catch (const PExcept& Except) {
         TNodeJsUtil::ThrowJsException(Isolate, Except);
         return nullptr;
     }
 }
 
-TNodeJsSearchPoint::TProcessQueryTask::TProcessQueryTask(const v8::FunctionCallbackInfo<v8::Value>& Args,
+TNodeJsSearchPoint::TCreateClustersTask::TCreateClustersTask(const v8::FunctionCallbackInfo<v8::Value>& Args,
             const bool& _IsAsync) :
         TNodeTask(Args),
-        QueryStr(TNodeJsUtil::GetArgStr(Args, 0)),
-        ClustKey(TNodeJsUtil::GetArgStr(Args, 1)),
-        Limit(TNodeJsUtil::GetArgInt32(Args, 2)),
-        IsAsync(_IsAsync) {
+        JsResult(nullptr) {
+
 
     TNodeJsSearchPoint* JsSp = ObjectWrap::Unwrap<TNodeJsSearchPoint>(Args.Holder());
 
+    JsResult = new TNodeJsSpResult(
+        TNodeJsUtil::GetArgStr(Args, 0),
+        TNodeJsUtil::GetArgJson(Args, 1)
+    );
     SearchPoint = JsSp->SearchPoint;
-    if (IsAsync) {
-        MainThreadHandle = TNodeJsAsyncUtil::NewBlockingHandle();
-    }
 }
 
-TNodeJsSearchPoint::TProcessQueryTask::~TProcessQueryTask() {
-    if (MainThreadHandle != nullptr) {
-        TNodeJsAsyncUtil::DelHandle(MainThreadHandle);
-    }
+v8::Handle<v8::Function> TNodeJsSearchPoint::TCreateClustersTask::GetCallback(const v8::FunctionCallbackInfo<v8::Value>& Args) {
+    return TNodeJsUtil::GetArgFun(Args, 2);
 }
 
-v8::Handle<v8::Function> TNodeJsSearchPoint::TProcessQueryTask::GetCallback(const v8::FunctionCallbackInfo<v8::Value>& Args) {
-    return TNodeJsUtil::GetArgFun(Args, 3);
-}
-
-v8::Local<v8::Value> TNodeJsSearchPoint::TProcessQueryTask::WrapResult() {
+v8::Local<v8::Value> TNodeJsSearchPoint::TCreateClustersTask::WrapResult() {
     v8::Isolate* Isolate = v8::Isolate::GetCurrent();
     v8::EscapableHandleScope HandleScope(Isolate);
-    return HandleScope.Escape(TNodeJsUtil::ParseJson(Isolate, ResultJson));
+
+    return HandleScope.Escape(TNodeJsUtil::NewInstance(JsResult));
 }
 
-void TNodeJsSearchPoint::TProcessQueryTask::Run() {
+void TNodeJsSearchPoint::TCreateClustersTask::Run() {
     try {
-        if (IsAsync) {
-            ResultJson = SearchPoint->ExecuteQuery(QueryStr, ClustKey, Limit, MainThreadHandle);
-        } else {
-            ResultJson = SearchPoint->ExecuteQuery(QueryStr, ClustKey, Limit, nullptr);
-        }
+        SearchPoint->GenClusters(
+            JsResult->WidgetKey,
+            JsResult->ItemV,
+            JsResult->ClusterV,
+            JsResult->ItemClustSimVV,
+            JsResult->HasBgClust
+        );
     } catch (const PExcept& Except) {
         SetExcept(Except);
     }
 }
 
-TNodeJsSearchPoint::TExecuteQueryTask::TExecuteQueryTask(
-            TNodeJsSearchPoint* _JsSearchPoint,
-            TSpResult& _SpResult,
-            const int& _Limit):
-        JsSp(_JsSearchPoint),
-        SpResult(_SpResult),
-        Limit(_Limit) {}
-
-void TNodeJsSearchPoint::TExecuteQueryTask::Run() {
-    if (JsSp->QueryCallback.IsEmpty()) {
-        return;
-    }
-
-    v8::Isolate* Isolate = v8::Isolate::GetCurrent();
-    v8::HandleScope HandleScope(Isolate);
-
-    try {
-        const TStr& QueryStr = SpResult.QueryStr;
-
-        // call the callback to get the results
-        v8::Local<v8::Function> Callback = v8::Local<v8::Function>::New(Isolate, JsSp->QueryCallback);
-        PJsonVal ResultJson = TNodeJsUtil::ExecuteJson(Callback, v8::String::NewFromUtf8(Isolate, QueryStr.CStr())->ToObject(), v8::Integer::New(Isolate, Limit)->ToObject());
-
-        EAssertR(ResultJson->IsArr(), "The result of the callback should be an array!");
-
-        TSpItemV& ItemV = SpResult.ItemV;
-
-        // parse the results
-        const int Len = ResultJson->GetArrVals();
-        for (int i = 0; i < Len; i++) {
-            PJsonVal ItemJson = ResultJson->GetArrVal(i);
-
-            EAssertR(ItemJson->GetObjKey("title")->IsDef(), "Title is not defined!");
-            EAssertR(ItemJson->GetObjKey("description")->IsDef(), "Item field description is not defined!");
-            EAssertR(ItemJson->GetObjKey("url")->IsDef(), "Item field url is not defined!");
-            EAssertR(ItemJson->GetObjKey("displayUrl")->IsDef(), "Item field displayUrl is not defined!");
-
-            const TStr& Title = ItemJson->GetObjStr("title");
-            const TStr& Desc = ItemJson->GetObjStr("description");
-            const TStr& Url = ItemJson->GetObjStr("url");
-            const TStr& DispUrl = ItemJson->GetObjStr("displayUrl");
-
-            ItemV.Add(TSpItem(i+1, Title, Desc, Url, DispUrl));
-        }
-    } catch (const PExcept& Except) {
-        TNodeJsUtil::ThrowJsException(Isolate, Except);
-    }
+void TNodeJsSearchPoint::TCreateClustersTask::SetExcept(const PExcept& Except) {
+    delete JsResult;
+    TNodeTask::SetExcept(Except);
 }
 
-/* void TNodeJsSearchPoint::processQuery(const v8::FunctionCallbackInfo<v8::Value>& Args) { */
-/*     v8::Isolate* Isolate = v8::Isolate::GetCurrent(); */
-/*     v8::HandleScope HandleScope(Isolate); */
-
-/*     TNodeJsSearchPoint* JsSp = ObjectWrap::Unwrap<TNodeJsSearchPoint>(Args.Holder()); */
-/*     TSpSearchPointImpl* SearchPoint = JsSp->SearchPoint; */
-
-/*     const TStr QueryStr = TNodeJsUtil::GetArgStr(Args, 0); */
-/*     const TStr ClustKey = TNodeJsUtil::GetArgStr(Args, 1); */
-/*     const int Limit = TNodeJsUtil::GetArgInt32(Args, 2); */
-
-/*     const PSpResult SpResult = SearchPoint->ExecuteQuery(QueryStr, ClustKey, Limit); */
-/*     PJsonVal ResultJson = SearchPoint->GenJSon(SpResult, 0, SearchPoint->PerPage); */
-
-/*     Args.GetReturnValue().Set(TNodeJsUtil::ParseJson(Isolate, ResultJson)); */
-/* } */
-
-void TNodeJsSearchPoint::rankByPos(const v8::FunctionCallbackInfo<v8::Value>& Args) {
+void TNodeJsSearchPoint::rerank(const v8::FunctionCallbackInfo<v8::Value>& Args) {
     v8::Isolate* Isolate = v8::Isolate::GetCurrent();
     v8::HandleScope HandleScope(Isolate);
 
     TNodeJsSearchPoint* JsSp = ObjectWrap::Unwrap<TNodeJsSearchPoint>(Args.Holder());
     TSpSearchPointImpl* SearchPoint = JsSp->SearchPoint;
 
-    const double x = TNodeJsUtil::GetArgFlt(Args, 0);
-    const double y = TNodeJsUtil::GetArgFlt(Args, 1);
-    const int Page = TNodeJsUtil::GetArgInt32(Args, 2);
-    const TStr QueryId = TNodeJsUtil::GetArgStr(Args, 3);
+    const TNodeJsSpResult* JsSpResult = TNodeJsUtil::GetArgUnwrapObj<TNodeJsSpResult>(Args, 0);
+    const double x = TNodeJsUtil::GetArgFlt(Args, 1);
+    const double y = TNodeJsUtil::GetArgFlt(Args, 2);
+    const int Page = TNodeJsUtil::GetArgInt32(Args, 3);
 
     TFltPrV PosV;   PosV.Add(TFltPr(x, y));
 
-    PJsonVal ResultJson = SearchPoint->ProcPosPageRq(PosV, Page, QueryId);
+    TIntV PermuteV;
+    SearchPoint->ProcPosPageRq(
+        PosV,
+        JsSpResult->ClusterV,
+        JsSpResult->ItemClustSimVV,
+        JsSpResult->HasBgClust,
+        Page,
+        PermuteV
+    );
 
-    Args.GetReturnValue().Set(TNodeJsUtil::ParseJson(Isolate, ResultJson));
+    v8::Local<v8::Array> JsIdxV = v8::Array::New(Isolate, PermuteV.Len());
+    for (int IdxN = 0; IdxN < PermuteV.Len(); ++IdxN) {
+        JsIdxV->Set(IdxN, v8::Integer::New(Isolate, PermuteV[IdxN]));
+    }
+
+    Args.GetReturnValue().Set(JsIdxV);
 }
 
 void TNodeJsSearchPoint::fetchKeywords(const v8::FunctionCallbackInfo<v8::Value>& Args) {
@@ -221,43 +314,17 @@ void TNodeJsSearchPoint::fetchKeywords(const v8::FunctionCallbackInfo<v8::Value>
     TNodeJsSearchPoint* JsSp = ObjectWrap::Unwrap<TNodeJsSearchPoint>(Args.Holder());
     TSpSearchPointImpl* SearchPoint = JsSp->SearchPoint;
 
-    const double x = TNodeJsUtil::GetArgFlt(Args, 0);
-    const double y = TNodeJsUtil::GetArgFlt(Args, 1);
-    const TStr QueryId = TNodeJsUtil::GetArgStr(Args, 2);
+    const TNodeJsSpResult* JsResult = TNodeJsUtil::GetArgUnwrapObj<TNodeJsSpResult>(Args, 0);
+    const double x = TNodeJsUtil::GetArgFlt(Args, 1);
+    const double y = TNodeJsUtil::GetArgFlt(Args, 2);
 
-    PJsonVal ResultJson = SearchPoint->ProcessPosKwRq(TFltPr(x, y), QueryId);
+    PJsonVal ResultJson = SearchPoint->ProcessPosKwRq(
+        TFltPr(x, y),
+        JsResult->ClusterV,
+        JsResult->HasBgClust
+    );
 
     Args.GetReturnValue().Set(TNodeJsUtil::ParseJson(Isolate, ResultJson));
-}
-
-void TNodeJsSearchPoint::getQueryId(const v8::FunctionCallbackInfo<v8::Value>& Args) {
-    v8::Isolate* Isolate = v8::Isolate::GetCurrent();
-    v8::HandleScope HandleScope(Isolate);
-
-    TNodeJsSearchPoint* JsSp = ObjectWrap::Unwrap<TNodeJsSearchPoint>(Args.Holder());
-    TSpSearchPointImpl* SearchPoint = JsSp->SearchPoint;
-
-    const TStr Query = TNodeJsUtil::GetArgStr(Args, 0);
-    const TStr ClustKey = TNodeJsUtil::GetArgStr(Args, 1);
-    const int Limit = TNodeJsUtil::GetArgInt32(Args, 2);
-
-    const TStr QueryId = SearchPoint->GenQueryId(Query, ClustKey, Limit);
-
-    Args.GetReturnValue().Set(v8::String::NewFromUtf8(Isolate, QueryId.CStr()));
-}
-
-void TNodeJsSearchPoint::ExecuteQuery(TSpResult& SpResult,
-        const int Limit,
-        void* Param) {
-    if (Param != nullptr) {
-        // must execute on the main thread
-        TMainThreadHandle* Handle = static_cast<TMainThreadHandle*>(Param);
-        TExecuteQueryTask* Task = new TExecuteQueryTask(this, SpResult, Limit);
-        TNodeJsAsyncUtil::ExecuteOnMain(Task, Handle, true);    // true indicates that the task will be deleted
-    } else {
-        TExecuteQueryTask Task(this, SpResult, Limit);
-        Task.Run();
-    }
 }
 
 void TNodeJsSearchPoint::Clr() {
@@ -271,79 +338,10 @@ void TNodeJsSearchPoint::Clr() {
     }
 }
 
-
-//const TStr TNodeJsDataSource::ClassId = "DataSource";
-//
-//void TNodeJsDataSource::Init(v8::Handle<v8::Object> Exports) {
-//  v8::Isolate* Isolate = v8::Isolate::GetCurrent();
-//  v8::HandleScope HandleScope(Isolate);
-//
-//  v8::Local<v8::FunctionTemplate> tpl = v8::FunctionTemplate::New(Isolate, TNodeJsUtil::_NewJs<TNodeJsDataSource>);
-//  tpl->SetClassName(v8::String::NewFromUtf8(Isolate, ClassId.CStr()));
-//  // ObjectWrap uses the first internal field to store the wrapped pointer.
-//  tpl->InstanceTemplate()->SetInternalFieldCount(1);
-//
-//  // Add all methods, getters and setters here.
-////    NODE_SET_PROTOTYPE_METHOD(tpl, "processQuery", _processQuery);
-////    NODE_SET_PROTOTYPE_METHOD(tpl, "rankByPos", _rankByPos);
-////    NODE_SET_PROTOTYPE_METHOD(tpl, "fetchKeywords", _fetchKeywords);
-////    NODE_SET_PROTOTYPE_METHOD(tpl, "getQueryId", _getQueryId);
-//
-//  Exports->Set(v8::String::NewFromUtf8(Isolate, ClassId.CStr()), tpl->GetFunction());
-//}
-//
-//TNodeJsDataSource::TNodeJsDataSource(v8::Handle<v8::Function>& _QueryCallback) {
-//  v8::Isolate* Isolate = v8::Isolate::GetCurrent();
-//  v8::HandleScope HandleScope(Isolate);
-//  QueryCallback.Reset(Isolate, _QueryCallback);
-//}
-//
-//TNodeJsDataSource::~TNodeJsDataSource() {
-//  QueryCallback.Reset();
-//}
-//
-//TNodeJsDataSource* TNodeJsDataSource::NewFromArgs(const v8::FunctionCallbackInfo<v8::Value>& Args) {
-//  EAssertR(Args.Length() == 1 && Args[0]->IsFunction(), "Argument 1 is not a function!");
-//
-//  v8::Handle<v8::Function> Callback = v8::Handle<v8::Function>::Cast(Args[0]);
-//  return new TNodeJsDataSource(Callback);
-//}
-//
-//void TNodeJsDataSource::ExecuteQuery(PSpResult& Result, const int Limit) {
-//  if (QueryCallback.IsEmpty()) { return; }
-//
-//  v8::Isolate* Isolate = v8::Isolate::GetCurrent();
-//  v8::HandleScope HandleScope(Isolate);
-//
-//  try {
-//      // call the callback to get the results
-//      v8::Local<v8::Function> Callback = v8::Local<v8::Function>::New(Isolate, QueryCallback);
-//      PJsonVal ResultJson = TNodeJsUtil::ExecuteJson(Callback, v8::Integer::New(Isolate, Limit)->ToObject());
-//
-//      EAssertR(ResultJson->IsArr(), "The result of the callback should be an array!");
-//
-//      TSpItemV& ItemV = Result->ItemV;
-//
-//      // parse the results
-//      const int Len = ResultJson->GetArrVals();
-//      for (int i = 0; i < Len; i++) {
-//          PJsonVal ItemJson = ResultJson->GetArrVal(i);
-//
-//          const TStr& Title = ItemJson->GetObjStr("title");
-//          const TStr& Desc = ItemJson->GetObjStr("description");
-//          const TStr& Url = ItemJson->GetObjStr("url");
-//          const TStr& DispUrl = ItemJson->GetObjStr("displayUrl");
-//
-//          ItemV.Add(TSpItem(i+1, Title, Desc, Url, DispUrl));
-//      }
-//  } catch (const PExcept& Except) {
-//      TNodeJsUtil::ThrowJsException(Isolate, Except);
-//  }
-//}
-
 //////////////////////////////////////////////
 // module initialization
 void Init(v8::Handle<v8::Object> Exports) {
+    TNodeJsSpResult::Init(Exports);
     TNodeJsSearchPoint::Init(Exports);
 }
 

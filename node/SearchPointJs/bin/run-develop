@@ -1,0 +1,6 @@
+#!/bin/bash
+
+curr_dir=`pwd`
+cd ..
+node src/main.js config/config-develop.json
+cd $curr_dir
