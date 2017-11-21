@@ -134,8 +134,7 @@ var DataService = function () {
                 data: {q: query, c: clusteringKey, n: nresults},
                 dataType: "json",
                 async: true,
-                success: function (data, textStatus, jqXHR) {
-                    $('#s').val(data.queryId);
+                success: function (data) {
                     document.title = query + ' - SearchPoint';
 
                     // update the items
@@ -153,7 +152,7 @@ var DataService = function () {
                         if (stage.removeTooltips)
                             stage.removeTooltips();
 
-                        if (clusters != null) {
+                        if (clusters != null && clusters.length > 0) {
                             stage.origClusters = clusters;
                             service.toClientCoords(stage.origClusters);
 
@@ -218,10 +217,12 @@ var DataService = function () {
                     // refresh the items
                     listCont.drawItems();
 
-                    $('#data').removeClass('loading');
                     return false;
                 },
-                error: function () { /* for now do nothing */ }
+                error: function () { /* for now do nothing */ },
+                complete: function () {
+                    $('#data').removeClass('loading');
+                }
             });
 
             // push the URL
@@ -764,15 +765,10 @@ function Cluster(options) {
 							var color = hsl2rgb(options.color[0], options.color[1], options.color[2]);
 							context.fillStyle = 'rgb(' + color.r + ', ' + color.g + ', ' + color.b + ')';
 						} else {
-                            // console.log(relFq);
-                            // var minSat = 60, maxSat = 100;
                             var sat = Math.sqrt(kword.weight)*100;
-                            // var sat = Math.pow((100 - Math.min(Math.max(100*relFq, minSat), maxSat))/100, 2)*100;
-                            // console.log(sat);
                             options.color[1] = sat;
 							var color = hsl2rgb(options.color[0], options.color[1], options.color[2]);
                             context.fillStyle = 'rgb(' + color.r + ', ' + color.g + ', ' + color.b + ')';
-							// context.fillStyle = 'rgba(' + color.r + ', ' + color.g + ', ' + color.b + ',' + Math.pow((100 - Math.min(Math.max(100*kword.fq, 0), 95))/100, 2)*100 + ')';
 						}						
 						
 						context.fillText(text, kword.pos[0], kword.pos[1]);

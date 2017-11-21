@@ -40,6 +40,9 @@ module.exports = exports = function (opts) {
 
     let store = new MemoryStore();
     store.on('preDestroy', function (sessionId) {
+        if (log.debug())
+            log.debug('will remove session data');
+
         sp.removeData(sessionId);
         if (executorH.has(sessionId)) { executorH.delete(sessionId); }
     })
@@ -58,13 +61,7 @@ module.exports = exports = function (opts) {
     }))
 
     function initRestApi() {
-        let nQueries = 0;
-        let nExecutes = 0;
-        let nCancels = 0;
-
         app.get(API_PATH + '/query', function (req, res) {
-            console.log('queries: ' + nQueries + ', nExecutes: ' + nExecutes + ', nCancels: ' + nCancels);
-            ++nQueries;
             try {
                 let sessionId = req.sessionID;
                 let query = req.query[QUERY_PARAM];//encodeURI(req.query[QUERY_PARAM]);
@@ -80,14 +77,12 @@ module.exports = exports = function (opts) {
                 let execute = executorH.get(sessionId);
 
                 let onCanceled = function () {
-                    ++nCancels;
                     log.debug('Request cancelled in favor of newer request!');
                     res.status(204);
                     res.end();
                 }
 
                 let fetchAndCluster = function (done) {
-                    ++nExecutes;
                     let items = null;
                     let tasks = [
                         function (xcb) {

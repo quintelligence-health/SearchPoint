@@ -60,9 +60,13 @@ class SearchPoint extends sp.SearchPoint {
 
     createClusters(userId, widgetKey, items, callback) {
         let self = this;
+        let log = self._log;
 
         super.createClusters(widgetKey, items, function (e, state) {
             if (e != null) return callback(e);
+
+            if (log.debug())
+                log.debug('Adding user id `%s`', userId);
 
             self._resultH.set(userId, new ResultWrapper({
                 state: state
@@ -109,18 +113,18 @@ class SearchPoint extends sp.SearchPoint {
 
     removeData(userId) {
         let self = this;
-
         let log = self._log;
-        log.info('removing userId `%s` manually', userId);
+
+        let resultH = self._resultH;
 
         if (self._cleanup != 'manual') throw new Error('Invalid cleanup type!');
-        if (!self._resultH.has(userId)) throw new Error('User id `' + userId + '` is missing!');
+        if (!resultH.has(userId)) throw new Error('User id `' + userId + '` is missing!');
 
-        self._resultH.delete(userId);
-        log.info('userId `%s` removed!', userId);
+        resultH.delete(userId);
+        log.info('userId `%s` removed, total number of users: %d!', userId, resultH.size);
     }
 
-    _getCachedState(userId) {   // TODO set timeout the same as that for the server
+    _getCachedState(userId) {
         if (!this._resultH.has(userId)) throw new Error('Session expired for user `' + userId + '`!');
         let wrapper = this._resultH.get(userId);
         if (wrapper == null) throw new Error('WTF!? Wrapper undefined!');

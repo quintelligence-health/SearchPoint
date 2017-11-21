@@ -74,7 +74,10 @@ class BingDataSource {
 
                 let parsed = self._parseResponse(itemsJson);
 
-                if (parsed == null) return done();
+                if (parsed == null || parsed.items.length == 0) {
+                    hasNext = false
+                    return done();
+                }
 
                 let batch = parsed.items;
                 if (offset + batch.length > limit) {
@@ -111,6 +114,11 @@ class BingDataSource {
 
         if (log.trace())
             log.trace('Parsing BING response:\n%s', JSON.stringify(data, null, ' '));
+
+        // check if the result is empty
+        if (Object.keys(data.rankingResponse).length == 0) {
+            return { items: result, totalEstimated: 0 }
+        }
 
         let totalEstimated = data.webPages.totalEstimatedMatches;
 
