@@ -70,7 +70,10 @@ class BingDataSource {
 
             // let resp = syncrequest('GET', + path, opts);
             utils.httpsGetJson(host, path, params, headers, function (e, itemsJson) {
-                if (e != null) return done(e);
+                if (e != null) {
+                    log.error(e, 'Request failed with content:\n%s', itemsJson);
+                    return done(e);
+                }
 
                 let parsed = self._parseResponse(itemsJson);
 

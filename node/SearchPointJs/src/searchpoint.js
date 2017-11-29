@@ -118,10 +118,18 @@ class SearchPoint extends sp.SearchPoint {
         let resultH = self._resultH;
 
         if (self._cleanup != 'manual') throw new Error('Invalid cleanup type!');
-        if (!resultH.has(userId)) throw new Error('User id `' + userId + '` is missing!');
 
-        resultH.delete(userId);
-        log.info('userId `%s` removed, total number of users: %d!', userId, resultH.size);
+        if (resultH.has(userId)) {
+            resultH.delete(userId);
+            if (log.debug())
+                log.debug('userId `%s` removed!', userId);
+        } else {
+            if (log.debug())
+                log.debug('cannot delete userId `%s` it does not exist!', userId);
+        }
+
+        if (log.debug())
+            log.debug('total number of users: %d', resultH.size);
     }
 
     _getCachedState(userId) {
@@ -139,11 +147,11 @@ class SearchPoint extends sp.SearchPoint {
         let log = self._log;
         let now = Date.now();
         let keys = Array.from(self._resultH.keys());
-        for (let key of keys) {
-            let wrapper = self._resultH.get(key);
+        for (let userId of keys) {
+            let wrapper = self._resultH.get(userId);
             if (now - wrapper.timestamp > self._timeout) {
-                log.info('removing userId `%s`', key);
-                self._resultH.delete(key);
+                log.info('removing userId `%s`', userId);
+                self.removeData(userId);
             }
         }
     }

@@ -1,0 +1,3 @@
+[submodule "node/qminer"]
+	path = node/qminer
+	url = https://github.com/lstopar/qminer.git
