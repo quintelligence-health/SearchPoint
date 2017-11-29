@@ -86,16 +86,16 @@
             	'src/spnode.cpp',
                 'src/sp.h',
                 'src/sp.cpp',
-                '../../../qminer/src/nodejs/nodeutil.h',
-                '../../../qminer/src/nodejs/nodeutil.cpp'
+                '../qminer/src/nodejs/nodeutil.h',
+                '../qminer/src/nodejs/nodeutil.cpp'
             ],
             'include_dirs': [
                 'src/',
-                '../../../qminer/src/nodejs/',
-                '../../../qminer/src/glib/base/',
-                '../../../qminer/src/glib/mine/',
-                '../../../qminer/src/glib/misc/',
-                '../../../qminer/src/glib/concurrent/'
+                '../qminer/src/nodejs/',
+                '../qminer/src/glib/base/',
+                '../qminer/src/glib/mine/',
+                '../qminer/src/glib/misc/',
+                '../qminer/src/glib/concurrent/'
             ],
             'defines': [
             ],
@@ -120,20 +120,20 @@
             'target_name': 'glib',
             'type': 'static_library',
             'sources': [
-                '../../../qminer/src/glib/base/base.h',
-                '../../../qminer/src/glib/base/base.cpp',
-                '../../../qminer/src/glib/mine/mine.h',
-                '../../../qminer/src/glib/mine/mine.cpp',
-                '../../../qminer/src/glib/concurrent/thread.h',
-                '../../../qminer/src/glib/concurrent/thread.cpp',
-		'../../../qminer/src/third_party/sole/sole.cpp'
+                '../qminer/src/glib/base/base.h',
+                '../qminer/src/glib/base/base.cpp',
+                '../qminer/src/glib/mine/mine.h',
+                '../qminer/src/glib/mine/mine.cpp',
+                '../qminer/src/glib/concurrent/thread.h',
+                '../qminer/src/glib/concurrent/thread.cpp',
+		        '../qminer/src/third_party/sole/sole.cpp'
             ],        
             'include_dirs': [
-                '../../../qminer/src/glib/base/',
-                '../../../qminer/src/glib/mine/',
-                '../../../qminer/src/glib/misc/',
-                '../../../qminer/src/third_party/sole/',
-                '../../../qminer/src/glib/concurrent/'
+                '../qminer/src/glib/base/',
+                '../qminer/src/glib/mine/',
+                '../qminer/src/glib/misc/',
+                '../qminer/src/third_party/sole/',
+                '../qminer/src/glib/concurrent/'
             ],
             'defines': [
             ]

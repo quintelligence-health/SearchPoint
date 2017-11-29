@@ -146,7 +146,7 @@ void TNodeJsSpResult::getByIndexes(const v8::FunctionCallbackInfo<v8::Value>& Ar
     Args.GetReturnValue().Set(TNodeJsUtil::ParseJson(Isolate, JsonItemV));
 }
 
-void TNodeJsSpResult::totalItems(v8::Local<v8::String> Name, const v8::PropertyCallbackInfo<v8::Value>& Info) {
+void TNodeJsSpResult::totalItems(v8::Local<v8::Name> Name, const v8::PropertyCallbackInfo<v8::Value>& Info) {
     v8::Isolate* Isolate = v8::Isolate::GetCurrent();
     v8::HandleScope HandleScope(Isolate);
 
