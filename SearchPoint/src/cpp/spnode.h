@@ -36,15 +36,24 @@ public:
     TStr WidgetKey;
     TSpClusterV ClusterV {};
     TFltVV ItemClustSimVV {};
-    bool HasBgClust {false};
+    TBool HasBgClust {false};
 
     // constructor
     TNodeJsSpResult(const TStr& WidgetKey, const PJsonVal& JsonItemV);
     static TNodeJsSpResult* NewFromArgs(const v8::FunctionCallbackInfo<v8::Value>& Args);
 
-public:
+    // SERIALIZATION
+    TNodeJsSpResult(TSIn& SIn);
+    void Save(TSOut&) const;
+
     JsDeclareFunction(getClusters);
     JsDeclareFunction(getByIndexes);
+
+    /**
+     * Serializes the model into a Node.js Buffer.
+     */
+    JsDeclareFunction(serialize);
+
     JsDeclareProperty(totalItems);
 };
 

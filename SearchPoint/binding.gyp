@@ -82,15 +82,15 @@
             # node SearchPoint module
             'target_name': 'sp',
             'sources': [
-            	'src/spnode.h',
-            	'src/spnode.cpp',
-                'src/sp.h',
-                'src/sp.cpp',
+            	'src/cpp/spnode.h',
+            	'src/cpp/spnode.cpp',
+                'src/cpp/sp.h',
+                'src/cpp/sp.cpp',
                 '../qminer/src/nodejs/nodeutil.h',
                 '../qminer/src/nodejs/nodeutil.cpp'
             ],
             'include_dirs': [
-                'src/',
+                'src/cpp/',
                 '../qminer/src/nodejs/',
                 '../qminer/src/glib/base/',
                 '../qminer/src/glib/mine/',

@@ -59,6 +59,43 @@ TSpItem::TSpItem(const int& _Id, const TStr& _Title, const TStr& _Desc,
 		DisplayUrl(_DispUrl),
 		DateTime() {}
 
+TSpItem::TSpItem(TSIn& SIn):
+        Id(TInt(SIn)),
+        Title(SIn),
+        Description(SIn),
+        Url(SIn),
+        DisplayUrl(SIn),
+        DateTime(SIn) {}
+
+void TSpItem::Save(TSOut& SOut) const {
+    TInt(Id).Save(SOut);
+    Title.Save(SOut);
+    Description.Save(SOut);
+    Url.Save(SOut);
+    DisplayUrl.Save(SOut);
+    DateTime.Save(SOut);
+}
+
+
+////////////////////////////////
+/// SearchPoint - Cluster
+TSpCluster::TSpCluster(TSIn& SIn):
+        RecIdTopKwKd(SIn),
+        RecIdKwWgtFqTrKdV(SIn),
+        BowDocPartClust(SIn),
+        Pos(SIn),
+        Size(TInt(SIn)),
+        ChildIdxV(SIn) {}
+
+void TSpCluster::Save(TSOut& SOut) const {
+    RecIdTopKwKd.Save(SOut);
+    RecIdKwWgtFqTrKdV.Save(SOut);
+    BowDocPartClust.Save(SOut);
+    Pos.Save(SOut);
+    TInt(Size).Save(SOut);
+    ChildIdxV.Save(SOut);
+}
+
 ///////////////////////////////////////////////
 // SearchPoint-Utilities
 void TSpUtils::CalcPosition(const double StartX, const double StartY, const double Angle,
@@ -770,10 +807,11 @@ void TSpDmozClustUtils::ToSpClustV(const TVec<TSpDmozCluster>& DmozClustV, TSpCl
 		const TSpDmozCluster& Clust = DmozClustV[i];
 
 		TVec<TStr> ChildNameV;	Clust.ChildH.GetKeyV(ChildNameV);
-		TVec<int> ChildIdxV;
+		TIntV ChildIdxV;
 
-		for (int j = 0; j < ChildNameV.Len(); j++)
-			ChildIdxV.Add(NameIdxH(ChildNameV[j]));
+        for (int j = 0; j < ChildNameV.Len(); j++) {
+            ChildIdxV.Add(NameIdxH(ChildNameV[j]));
+        }
 
 		TVec<TKeyDat<TUInt64, TStrFltFltTr>> RecIdKwWgtPrKdV;
 		TSpCluster SpClust(TUInt64StrKd((uint64) 0, Clust.Name), RecIdKwWgtPrKdV, Clust.Position, Clust.Size);

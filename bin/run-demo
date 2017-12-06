@@ -1,10 +1,10 @@
 #!/bin/bash
 
 curr_dir=`pwd`
-cd ../SearchPointSrv
+cd ..
 
 while true; do
-    node main.js config-bing.json
+    node SearchPointSrv/src/main.js config/config-bing.json
     sleep 1
 done
 

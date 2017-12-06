@@ -24,10 +24,11 @@ void TNodeJsSpResult::Init(v8::Handle<v8::Object> Exports) {
     // Add all methods, getters and setters here.
     NODE_SET_PROTOTYPE_METHOD(tpl, "getClusters", _getClusters);
     NODE_SET_PROTOTYPE_METHOD(tpl, "getByIndexes", _getByIndexes);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "serialize", _getByIndexes);
 
     tpl->InstanceTemplate()->SetAccessor(v8::String::NewFromUtf8(Isolate, "totalItems"), _totalItems);
 
-    // This has to be last, otherwise the properties won't show up on the object in JavaScript	
+    // This has to be last, otherwise the properties won't show up on the object in JavaScript
     // Constructor is used when creating the object from C++
     Constructor.Reset(Isolate, child->GetFunction());
     // we need to export the class for calling using "new SearchPointResult(...)"
@@ -58,9 +59,37 @@ TNodeJsSpResult::TNodeJsSpResult(const TStr& _WidgetKey, const PJsonVal& JsonIte
 }
 
 TNodeJsSpResult* NewFromArgs(const v8::FunctionCallbackInfo<v8::Value>& Args) {
-    const TStr WidgetKey = TNodeJsUtil::GetArgStr(Args, 0);
-    const PJsonVal JsonItemV = TNodeJsUtil::GetArgJson(Args, 1);
-    return new TNodeJsSpResult(WidgetKey, JsonItemV);
+    v8::Isolate* Isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope HandleScope(Isolate);
+
+    if (TNodeJsUtil::IsArgBuffer(Args, 0)) {
+        v8::Local<v8::Object> JsBuffObj = Args[0]->ToObject();
+
+        const size_t BuffLen = node::Buffer::Length(JsBuffObj);
+        const char* Buff = node::Buffer::Data(JsBuffObj);
+
+        TMIn SIn(Buff, BuffLen, false);
+        return new TNodeJsSpResult(SIn);
+    } else {
+        const TStr WidgetKey = TNodeJsUtil::GetArgStr(Args, 0);
+        const PJsonVal JsonItemV = TNodeJsUtil::GetArgJson(Args, 1);
+        return new TNodeJsSpResult(WidgetKey, JsonItemV);
+    }
+}
+
+TNodeJsSpResult::TNodeJsSpResult(TSIn& SIn):
+        ItemV(SIn),
+        WidgetKey(SIn),
+        ClusterV(SIn),
+        ItemClustSimVV(SIn),
+        HasBgClust(SIn) {}
+
+void TNodeJsSpResult::Save(TSOut& SOut) const {
+    ItemV.Save(SOut);
+    WidgetKey.Save(SOut);
+    ClusterV.Save(SOut);
+    ItemClustSimVV.Save(SOut);
+    HasBgClust.Save(SOut);
 }
 
 void TNodeJsSpResult::getClusters(const v8::FunctionCallbackInfo<v8::Value>& Args) {
@@ -144,6 +173,23 @@ void TNodeJsSpResult::getByIndexes(const v8::FunctionCallbackInfo<v8::Value>& Ar
     }
 
     Args.GetReturnValue().Set(TNodeJsUtil::ParseJson(Isolate, JsonItemV));
+}
+
+void TNodeJsSpResult::serialize(const v8::FunctionCallbackInfo<v8::Value>& Args) {
+    v8::Isolate* Isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope HandleScope(Isolate);
+
+    TNodeJsSpResult* JsState = ObjectWrap::Unwrap<TNodeJsSpResult>(Args.Holder());
+
+    TMOut SOut;
+
+    JsState->Save(SOut);
+
+    const int BuffLen = SOut.Len();
+    const char* Buff = SOut.GetBfAddr();
+
+    v8::Local<v8::Object> JsBuff = node::Buffer::Copy(Isolate, Buff, BuffLen).ToLocalChecked();
+    Args.GetReturnValue().Set(JsBuff);
 }
 
 void TNodeJsSpResult::totalItems(v8::Local<v8::Name> Name, const v8::PropertyCallbackInfo<v8::Value>& Info) {
@@ -231,8 +277,8 @@ TNodeJsSearchPoint* TNodeJsSearchPoint::NewFromArgs(const v8::FunctionCallbackIn
 }
 
 TNodeJsSearchPoint::TCreateClustersTask::TCreateClustersTask(const v8::FunctionCallbackInfo<v8::Value>& Args,
-            const bool& _IsAsync) :
-        TNodeTask(Args),
+            const bool& IsAsync) :
+        TNodeTask(Args, IsAsync),
         JsResult(nullptr) {
 
 
@@ -263,7 +309,7 @@ void TNodeJsSearchPoint::TCreateClustersTask::Run() {
             JsResult->ItemV,
             JsResult->ClusterV,
             JsResult->ItemClustSimVV,
-            JsResult->HasBgClust
+            JsResult->HasBgClust.Val
         );
     } catch (const PExcept& Except) {
         SetExcept(Except);

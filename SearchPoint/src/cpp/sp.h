@@ -22,6 +22,10 @@ public:
 	TSpItem(const int& Id, const TStr& Title, const TStr& Desc,
 			const TStr& Url, const TStr& DispUrl);
 
+    // SERIALIZATION
+    TSpItem(TSIn&);
+    void Save(TSOut&) const;
+
 	virtual ~TSpItem() {}
 };
 typedef TVec<TSpItem> TSpItemV;
@@ -36,7 +40,7 @@ public:
 	TFltPr Pos;
 	int Size;
 
-	TVec<int> ChildIdxV;
+	TIntV ChildIdxV;
 
 public:
 	TSpCluster():
@@ -51,12 +55,16 @@ public:
 		RecIdKwWgtFqTrKdV(_RecIdKwWgtFqTrKdV),
 		Pos(_Position),
 		Size(_Size) {}
-	TSpCluster(const TUInt64StrKd& _RecIdTopKwKd, const TVec<TKeyDat<TUInt64, TStrFltFltTr>>& _RecIdKwWgtFqTrKdV, const TFltPr& _Position, const int& _Size, const TVec<int>& _ChildIdxV):
+	TSpCluster(const TUInt64StrKd& _RecIdTopKwKd, const TVec<TKeyDat<TUInt64, TStrFltFltTr>>& _RecIdKwWgtFqTrKdV, const TFltPr& _Position, const int& _Size, const TIntV& _ChildIdxV):
 		RecIdTopKwKd(_RecIdTopKwKd),
 		RecIdKwWgtFqTrKdV(_RecIdKwWgtFqTrKdV),
 		Pos(_Position),
 		Size(_Size),
 		ChildIdxV(_ChildIdxV) {}
+
+    // SERIALIZATION
+    TSpCluster(TSIn&);
+    void Save(TSOut&) const;
 
   virtual ~TSpCluster() {}
 };

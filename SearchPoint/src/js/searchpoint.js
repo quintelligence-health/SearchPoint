@@ -1,8 +1,26 @@
-let path = require('path');
+// let path = require('path');
 
-let utils = require('./util/utils');
-let sp = require(path.join(__dirname, '../../SearchPointCpp/'));
+// let utils = require('./util/utils');
+let sp = require('bindings')('sp.node');
 
+class SearchPoint extends sp.SearchPoint {
+
+    constructor(opts) {
+        super(opts.settings);
+
+        let self = this;
+
+        if (opts.log == null) throw new Error('Parameter `log` missing!');
+
+        self._log = opts.log;
+    }
+
+    rerank(state, pos, page) {
+        let indexes = super.rerank(state, pos.x, pos.y, page);
+        let items = state.getByIndexes(indexes);
+        return items;
+    }
+}
 
 class ResultWrapper {
 
@@ -28,10 +46,10 @@ class ResultWrapper {
     }
 }
 
-class SearchPoint extends sp.SearchPoint {
+class SearchPointStore extends SearchPoint {
 
     constructor(opts) {
-        super(opts.settings);
+        super(opts);
 
         let self = this;
 
@@ -92,9 +110,7 @@ class SearchPoint extends sp.SearchPoint {
     rerank(userId, pos, page) {
         let self = this;
         let state = self._getCachedState(userId);
-        let indexes = super.rerank(state, pos.x, pos.y, page);
-        let items = state.getByIndexes(indexes);
-        return items;
+        return super.rerank(state, pos, page);
     }
 
     fetchKeywords(userId, pos) {
@@ -157,4 +173,6 @@ class SearchPoint extends sp.SearchPoint {
     }
 }
 
+exports.SearchPointBase = sp.SearchPoint;
 exports.SearchPoint = SearchPoint;
+exports.SearchPointStore = SearchPointStore;

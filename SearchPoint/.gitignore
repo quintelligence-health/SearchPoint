@@ -7,3 +7,7 @@
 
 # compile script
 /build.sh
+
+# Vim files
+.vimrc
+.jshintrc

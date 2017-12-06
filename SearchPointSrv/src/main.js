@@ -3,7 +3,7 @@ var bunyan = require('bunyan');
 var logformat = require('bunyan-format');
 
 var server = require('./server');
-let sp = require('./searchpoint');
+let sp = require('../../SearchPoint/');
 let decorations = require('./util/decorations');
 
 function readConfig(fname) {
@@ -64,10 +64,10 @@ try {
     var unicodePath = config.sp.unicodePath;
     var dmozPath = config.sp.dmozPath;
 
-    let searchpoint = new sp.SearchPoint({
+    let searchpoint = new sp.SearchPointStore({
         settings: {
             dmozPath: dmozPath,
-            unicodePath: unicodePath,
+            unicodePath: unicodePath
         },
         timeout: config.server.sessionTimeout,
         log: log,
