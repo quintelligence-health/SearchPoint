@@ -364,6 +364,15 @@ void TSpKMeansClustUtils::CalcClusters(const TSpItemV& ItemV,
 
 ///////////////////////////////////////////////
 // SearchPoint DP-Means Clustering Utilities
+TSpDPMeansClustUtils::TSpDPMeansClustUtils(const int& _RndSeed,
+        const PNotify& _Notify, const double& _Lambda,
+        const int _MaxClusts, const int& _MinDocsPerClust):
+    RndSeed(_RndSeed),
+    Lambda(_Lambda),
+    MaxClusts(_MaxClusts),
+    MinDocsPerClust(_MinDocsPerClust),
+    Notify(_Notify) {}
+
 void TSpDPMeansClustUtils::CalcClusters(const TSpItemV& ItemV,
         TSpClusterV& ClusterV, TFltVV& DocClustSimVV, bool& HasBgClust) {
 	Notify->OnNotify(TNotifyType::ntInfo, "Computing clusters...");
@@ -402,7 +411,7 @@ void TSpDPMeansClustUtils::CalcClusters(const TSpItemV& ItemV,
 	Notify->OnNotify(TNotifyType::ntInfo, "Clustering ...");
 
 	// does the clustering into clusters
-	TRnd Rnd(1);
+	TRnd Rnd(RndSeed);
 	PBowDocPart BowDocPart = TBowClust::GetDPMeansPartForDocWgtBs(Notify,
 		BowDocWgtBs, BowDocBs, BowSim, Rnd, Lambda, MinDocsPerClust, MaxClusts, 1, 10000, TBowClustInitScheme::tbcKMeansPP, 4);
 
@@ -452,7 +461,7 @@ void TSpDPMeansClustUtils::CalcClusters(const TSpItemV& ItemV,
     }
 	// put the clusters in a circle
 	TVec<TFltV> DocPointV(NClusts+1,0);
-	double ThetaStart = TRnd(0).GetUniDev()*TMath::Pi*2;
+	double ThetaStart = Rnd.GetUniDev()*TMath::Pi*2;
 	double ThetaStep = 2*TMath::Pi / NClusts;
 	for (int i = 0; i < NClusts; i++) {
         const int ClustN = BestIdV[i];
@@ -973,20 +982,6 @@ TSpSearchPointImpl::TSpSearchPointImpl(
             const PNotify& Notify):
         TSpSearchPoint(_ClustUtilsH, _DefaultClustUtilsKey, _PerPage, Notify) {}
 
-
-/* PSpSearchPoint TSpSearchPointImpl::New(PSpClustUtils& PClustUtils, const int& PerPage, const PSpDataSource& DataSource, */
-/* 			const PNotify& Notify) { */
-/* 	THash<TStr, PSpClustUtils> UtilsH; */
-/* 	TStr DefaultKey = "default"; */
-/* 	UtilsH.AddDat(DefaultKey, PClustUtils); */
-/* 	return TSpSearchPointImpl::New(UtilsH, DefaultKey, PerPage, DataSource, Notify); */
-/* } */
-
-/* PSpSearchPoint TSpSearchPointImpl::New(THash<TStr, PSpClustUtils>& ClustUtilsH, TStr& DefaultUtilsKey, const int& PerPage, */
-/* 		const PSpDataSource& DataSource, const PNotify& Notify) { */
-/* 	return new TSpSearchPointImpl(ClustUtilsH, DefaultUtilsKey, PerPage, DataSource, Notify); */
-/* } */
-
 bool TSpSearchPointImpl::KwSuitable(const TStr& Kw, const TStrV& KwV) {
 	for (int i = 0; i < KwV.Len(); i++) {
 		const TStr& Kw1 = KwV[i];
@@ -1000,11 +995,6 @@ bool TSpSearchPointImpl::KwSuitable(const TStr& Kw, const TStrV& KwV) {
 void TSpSearchPointImpl::GetResultsByWSim(const TFltPrV& PosV, const TSpClusterV& ClustV, 
             const TFltVV& ItemClustSimVV, const bool& HasBgClust, const int& Offset, const int& Limit, TIntV& PermuteV) const {
     if (!PermuteV.Empty()) { PermuteV.Clr(); }
-
-    // TODO check why this was here
-    /* if (!HasClusters(ClusterV)) { */
-    /*     return; */
-    /* } */
 
 	TFltPr Pos = PosV[0];
 	double x = Pos.Val1;
@@ -1222,14 +1212,6 @@ PJsonVal TSpSearchPoint::GenJson(const TSpResult& SpResult, const int& Offset, c
 // Processes a request to update position
 void TSpSearchPoint::ProcPosPageRq(const TFltPrV& PosV, const TSpClusterV& ClusterV,
         const TFltVV& ItemClustSimVV, const bool& HasBgClust, const int& Page, TIntV& PermuteV) {
-	// get all the needed objects out of the Query
-	/* TSpResult& SpResult = QueryHandle.GetQuery().GetResult(); */
-
-    // TODO check why this was here
-	/* if (!SpResult.HasClusters()) { */
-	/* 	return TJsonVal::NewStr("\"NOT_ENOUGH_DATA\""); */
-	/* } */
-
 	// calculate the offset and limit
 	int Offset = PerPage * Page;
 	int Limit = PerPage;
@@ -1239,10 +1221,6 @@ void TSpSearchPoint::ProcPosPageRq(const TFltPrV& PosV, const TSpClusterV& Clust
 
 PJsonVal TSpSearchPoint::ProcessPosKwRq(const TFltPr& Pos, const TSpClusterV& ClustV,
         const bool& HasBgClust) {
-    /* TSpResult& Result = QueryHandle.GetQuery().GetResult(); */
-	/* if (!Result.HasClusters()) { */
-		/* return TJsonVal::NewStr("\"NOT_ENOUGH_DATA\""); */
-	/* } */
 
 	TStrV KwV;	GetKwsByWSim(Pos, ClustV, HasBgClust, KwV);
 
