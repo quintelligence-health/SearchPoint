@@ -7,18 +7,16 @@ class SearchPoint extends sp.SearchPoint {
 
     constructor(opts) {
         super(opts.settings);
-
-        let self = this;
-
-        if (opts.log == null) throw new Error('Parameter `log` missing!');
-
-        self._log = opts.log;
     }
 
     rerank(state, pos, page) {
         let indexes = super.rerank(state, pos.x, pos.y, page);
         let items = state.getByIndexes(indexes);
         return items;
+    }
+
+    fetchKeywords(state, pos) {
+        return super.fetchKeywords(state, pos.x, pos.y);
     }
 }
 
@@ -116,7 +114,7 @@ class SearchPointStore extends SearchPoint {
     fetchKeywords(userId, pos) {
         let self = this;
         let state = self._getCachedState(userId);
-        return super.fetchKeywords(state, pos.x, pos.y);
+        return super.fetchKeywords(state, pos);
     }
 
     shutdown(callback) {

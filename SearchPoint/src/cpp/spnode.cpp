@@ -257,13 +257,7 @@ TNodeJsSearchPoint* TNodeJsSearchPoint::NewFromArgs(const v8::FunctionCallbackIn
 
         Notify->OnNotify(TNotifyType::ntInfo, "Parsing arguments ...");
 
-        const TStr UnicodeDefPath = ArgJson->GetObjStr("unicodePath");
         const TStr DmozFilePath = ArgJson->GetObjStr("dmozPath");
-
-        // load the unicode file
-        Notify->OnNotify(TNotifyType::ntInfo, "Loading UnicodeDef ...");
-        TUnicodeDef::Load(UnicodeDefPath);
-        Notify->OnNotify(TNotifyType::ntInfo, "Loaded!");
 
         TClustUtilH ClustUtilsH;
         ClustUtilsH.AddDat(DEFAULT_CLUST, new TSpDPMeansClustUtils(Notify));
