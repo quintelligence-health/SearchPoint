@@ -1,6 +1,4 @@
-// let path = require('path');
-
-// let utils = require('./util/utils');
+let decorators = require('./utils/decorators');
 let sp = require('bindings')('sp.node');
 
 class SearchPoint extends sp.SearchPoint {
@@ -10,9 +8,7 @@ class SearchPoint extends sp.SearchPoint {
     }
 
     rerank(state, pos, page) {
-        let indexes = super.rerank(state, pos.x, pos.y, page);
-        let items = state.getByIndexes(indexes);
-        return items;
+        return this._rerank(state, pos, page);
     }
 
     getWidget(state, callback) {
@@ -23,7 +19,7 @@ class SearchPoint extends sp.SearchPoint {
             y: 0.5
         }
 
-        let items = self.rerank(state, pos, 0);
+        let items = self._rerank(state, pos, 0);
         let clusters = state.getClusters();
         let totalItems = state.totalItems;
 
@@ -36,6 +32,12 @@ class SearchPoint extends sp.SearchPoint {
 
     fetchKeywords(state, pos) {
         return super.fetchKeywords(state, pos.x, pos.y);
+    }
+
+    _rerank(state, pos, page) {
+        let indexes = super.rerank(state, pos.x, pos.y, page);
+        let items = state.getByIndexes(indexes);
+        return items;
     }
 }
 
@@ -176,6 +178,20 @@ class SearchPointStore extends SearchPoint {
         }
     }
 }
+
+//===================================
+// DECORATIONS
+//===================================
+
+// SearchPoint
+// decorators.ExceptionWrapper.wrapClassAsyncFunction(SearchPoint, 'rerank');
+decorators.ExceptionWrapper.wrapClassAsyncFunction(SearchPoint, 'getWidget');
+// decorators.ExceptionWrapper.wrapClassAsyncFunction(SearchPoint, 'fetchKeywords');
+
+// SearchPointStore
+decorators.ExceptionWrapper.wrapClassAsyncFunction(SearchPointStore, 'createClusters');
+decorators.ExceptionWrapper.wrapClassAsyncFunction(SearchPointStore, 'shutdown');
+// decorators.wrapAsync(Seae)
 
 //===================================
 // EXPORTS

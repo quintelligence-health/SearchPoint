@@ -1,21 +1,21 @@
-var fs = require('fs');
-var bunyan = require('bunyan');
-var logformat = require('bunyan-format');
+let fs = require('fs');
+let bunyan = require('bunyan');
+let logformat = require('bunyan-format');
 
-var server = require('./server');
+let server = require('./server');
 let sp = require('../../SearchPoint/');
 let decorations = require('./util/decorations');
 
 function readConfig(fname) {
-    var configStr = fs.readFileSync(fname);
-    var config = JSON.parse(configStr);
+    let configStr = fs.readFileSync(fname);
+    let config = JSON.parse(configStr);
     if (config.source == null) throw new Error('Source config missing!');
     if (config.source.path == null) throw new Error('Source path missing!');
     return config;
 }
 
-function initLogStreams() {
-    var streams = [];
+function initLogStreams(config) {
+    let streams = [];
 
     config.logs.forEach(function (stream) {
         if (stream.type == 'stdout') {
@@ -50,24 +50,22 @@ function initLog(streams) {
 
 try {
     // initialization
-    var config = readConfig(process.argv[2]);
-    var logStreams = initLogStreams();
-    var log = initLog(logStreams);
+    let config = readConfig(process.argv[2]);
+    let logStreams = initLogStreams(config);
+    let log = initLog(logStreams);
 
     decorations.decorate({
         log: log
     })
 
-    var sourceConfig = config.source;
-    var source = require(sourceConfig.path);
+    let sourceConfig = config.source;
+    let source = require(sourceConfig.path);
 
-    var unicodePath = config.sp.unicodePath;
-    var dmozPath = config.sp.dmozPath;
+    let dmozPath = config.sp.dmozPath;
 
     let searchpoint = new sp.SearchPointStore({
         settings: {
-            dmozPath: dmozPath,
-            unicodePath: unicodePath
+            dmozPath: dmozPath
         },
         timeout: config.server.sessionTimeout,
         log: log,
@@ -85,11 +83,7 @@ try {
         sessionTimeout: config.server.sessionTimeout
     })
 } catch (e) {
-    if (log == null) {
-        console.error('Exception in main!');
-        console.error(e);
-    } else {
-        log.error(e, 'Unknown exception in main!');
-    }
+    console.error('Exception in main!');
+    console.error(e);
     process.exit(1);
 }
