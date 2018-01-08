@@ -15,6 +15,25 @@ class SearchPoint extends sp.SearchPoint {
         return items;
     }
 
+    getWidget(state, callback) {
+        let self = this;
+
+        let pos = {
+            x: 0.5,
+            y: 0.5
+        }
+
+        let items = self.rerank(state, pos, 0);
+        let clusters = state.getClusters();
+        let totalItems = state.totalItems;
+
+        callback(undefined, {
+            items: items,
+            clusters: clusters,
+            totalItems: totalItems
+        });
+    }
+
     fetchKeywords(state, pos) {
         return super.fetchKeywords(state, pos.x, pos.y);
     }
@@ -88,20 +107,7 @@ class SearchPointStore extends SearchPoint {
                 state: state
             }))
 
-            let pos = {
-                x: 0.5,
-                y: 0.5
-            }
-
-            let items = self.rerank(userId, pos, 0);
-            let clusters = state.getClusters();
-            let totalItems = state.totalItems;
-
-            callback(undefined, {
-                items: items,
-                clusters: clusters,
-                totalItems: totalItems
-            });
+            self.getWidget(state, callback);
         });
     }
 
@@ -171,6 +177,11 @@ class SearchPointStore extends SearchPoint {
     }
 }
 
+//===================================
+// EXPORTS
+//===================================
+
+exports.SearchPointState = sp.SearchPointState;
 exports.SearchPointBase = sp.SearchPoint;
 exports.SearchPoint = SearchPoint;
 exports.SearchPointStore = SearchPointStore;

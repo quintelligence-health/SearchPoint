@@ -24,7 +24,7 @@ void TNodeJsSpResult::Init(v8::Handle<v8::Object> Exports) {
     // Add all methods, getters and setters here.
     NODE_SET_PROTOTYPE_METHOD(tpl, "getClusters", _getClusters);
     NODE_SET_PROTOTYPE_METHOD(tpl, "getByIndexes", _getByIndexes);
-    NODE_SET_PROTOTYPE_METHOD(tpl, "serialize", _getByIndexes);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "serialize", _serialize);
 
     tpl->InstanceTemplate()->SetAccessor(v8::String::NewFromUtf8(Isolate, "totalItems"), _totalItems);
 
@@ -58,7 +58,7 @@ TNodeJsSpResult::TNodeJsSpResult(const TStr& _WidgetKey, const PJsonVal& JsonIte
     }
 }
 
-TNodeJsSpResult* NewFromArgs(const v8::FunctionCallbackInfo<v8::Value>& Args) {
+TNodeJsSpResult* TNodeJsSpResult::NewFromArgs(const v8::FunctionCallbackInfo<v8::Value>& Args) {
     v8::Isolate* Isolate = v8::Isolate::GetCurrent();
     v8::HandleScope HandleScope(Isolate);
 
@@ -204,7 +204,6 @@ void TNodeJsSpResult::totalItems(v8::Local<v8::Name> Name, const v8::PropertyCal
 /// SearchPoint
 const TStr TNodeJsSearchPoint::DEFAULT_CLUST = "kmeans";
 const TStr TNodeJsSearchPoint::JS_DATA_SOURCE_TYPE = "func";
-const int TNodeJsSearchPoint::PER_PAGE = 10;
 
 void TNodeJsSearchPoint::Init(v8::Handle<v8::Object> Exports) {
     v8::Isolate* Isolate = v8::Isolate::GetCurrent();
@@ -231,7 +230,7 @@ TNodeJsSearchPoint::TNodeJsSearchPoint(const TClustUtilH& ClustUtilH, const TStr
     v8::HandleScope HandleScope(Isolate);
 
     QueryCallback.Reset(Isolate, DataSourceCall);
-    SearchPoint = new TSpSearchPointImpl(ClustUtilH, DEFAULT_CLUST, PER_PAGE);
+    SearchPoint = new TSpSearchPointImpl(ClustUtilH, DEFAULT_CLUST, PerPage);
 }
 
 
@@ -258,12 +257,14 @@ TNodeJsSearchPoint* TNodeJsSearchPoint::NewFromArgs(const v8::FunctionCallbackIn
         Notify->OnNotify(TNotifyType::ntInfo, "Parsing arguments ...");
 
         const TStr DmozFilePath = ArgJson->GetObjStr("dmozPath");
+        const int RndSeed = ArgJson->GetObjInt("seed", 0);
+        const int PerPage = ArgJson->GetObjInt("perPage", 10);
 
         TClustUtilH ClustUtilsH;
-        ClustUtilsH.AddDat(DEFAULT_CLUST, new TSpDPMeansClustUtils(Notify));
+        ClustUtilsH.AddDat(DEFAULT_CLUST, new TSpDPMeansClustUtils(RndSeed, Notify));
         ClustUtilsH.AddDat("dmoz", new TSpDmozClustUtils(DmozFilePath));
 
-        return new TNodeJsSearchPoint(new TSpSearchPointImpl(ClustUtilsH, DEFAULT_CLUST, PER_PAGE));
+        return new TNodeJsSearchPoint(new TSpSearchPointImpl(ClustUtilsH, DEFAULT_CLUST, PerPage));
     } catch (const PExcept& Except) {
         TNodeJsUtil::ThrowJsException(Isolate, Except);
         return nullptr;

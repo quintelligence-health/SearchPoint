@@ -29,7 +29,7 @@ class TNodeJsSpResult: public node::ObjectWrap {
     static v8::Persistent<v8::Function> Constructor;
 public:
     static void Init(v8::Handle<v8::Object> Exports);
-    static const TStr GetClassId() { return "SearchPointResult"; };
+    static const TStr GetClassId() { return "SearchPointState"; };
 
 public:
     TSpItemV ItemV;
@@ -75,7 +75,6 @@ public:
 private:
 	const static TStr DEFAULT_CLUST;
 	const static TStr JS_DATA_SOURCE_TYPE;
-	const static int PER_PAGE;
 
 	TSpSearchPointImpl* SearchPoint;
 	v8::Persistent<v8::Function> QueryCallback;	// used if the data source is a function

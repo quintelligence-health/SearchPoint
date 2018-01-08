@@ -180,6 +180,7 @@ private:
 	static const int KwsPerClust;
     static const double MaxJoinDist;
 	
+    const int RndSeed;
 	const double Lambda;
 	const int MaxClusts;
 	const int MinDocsPerClust;
@@ -187,8 +188,13 @@ private:
 	PNotify Notify;
 
 public:
-	TSpDPMeansClustUtils(const PNotify& _Notify=TNullNotify::New(), const double& _Lambda = .05, const int _MaxClusts = 7, const int& _MinDocsPerClust = 5):
-		Lambda(_Lambda), MaxClusts(_MaxClusts), MinDocsPerClust(_MinDocsPerClust), Notify(_Notify) {}
+	TSpDPMeansClustUtils(
+            const int& RndSeed,
+            const PNotify& _Notify=TNullNotify::New(),
+            const double& _Lambda = .05,
+            const int _MaxClusts = 7,
+            const int& _MinDocsPerClust = 5
+            );
 protected:
 	void CalcClusters(const TSpItemV& ItemV, TSpClusterV& ClusterV,
             TFltVV& DocClustSimVV, bool& HasBgClust);
@@ -273,9 +279,12 @@ private:
 	PNotify Notify;
 
 public:
-	TSpSearchPoint(const TClustUtilH& ClustUtilsH,
-			const TStr& DefaultClustUtilsKey, const int& _PerPage,
-			const PNotify& Notify=TNullNotify::New());
+	TSpSearchPoint(
+        const TClustUtilH& ClustUtilsH,
+        const TStr& DefaultClustUtilsKey,
+        const int& _PerPage,
+        const PNotify& Notify=TNullNotify::New()
+    );
 
     virtual ~TSpSearchPoint() {
         int KeyId = ClustUtilsH.FFirstKeyId();
@@ -326,11 +335,6 @@ public:
             const int& PerPage,
             const PNotify& Notify=TNullNotify::New()
     );
-
-	/* static PSpSearchPoint New(PSpClustUtils& PClustUtils, const int& PerPage, const PSpDataSource& DataSource, */
-	/* 		const PNotify& Notify=TNullNotify::New()); */
-	/* static PSpSearchPoint New(THash<TStr, PSpClustUtils>& ClustUtilsH, TStr& DefaultUtilsKey, const int& PerPage, */
-	/* 		const PSpDataSource& DataSource, const PNotify& Notify=TNullNotify::New()); */
 
 	static bool KwSuitable(const TStr& Kw, const TStrV& KwV);
 
