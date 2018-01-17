@@ -126,13 +126,16 @@
                 '../qminer/src/glib/mine/mine.cpp',
                 '../qminer/src/glib/concurrent/thread.h',
                 '../qminer/src/glib/concurrent/thread.cpp',
-		        '../qminer/src/third_party/sole/sole.cpp'
-            ],        
+		'../qminer/src/third_party/sole/sole.cpp',
+		'../qminer/src/third_party/libsvm/svm.h',
+		'../qminer/src/third_party/libsvm/svm.cpp'
+	    ],        
             'include_dirs': [
                 '../qminer/src/glib/base/',
                 '../qminer/src/glib/mine/',
                 '../qminer/src/glib/misc/',
                 '../qminer/src/third_party/sole/',
+		'../qminer/src/third_party/libsvm/',
                 '../qminer/src/glib/concurrent/'
             ],
             'defines': [
