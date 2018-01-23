@@ -246,7 +246,7 @@ TNodeJsSearchPoint* TNodeJsSearchPoint::NewFromArgs(const v8::FunctionCallbackIn
     v8::HandleScope HandleScope(Isolate);
 
     try {
-        const PNotify Notify = TStdNotify::New();
+        const PNotify Notify = TNullNotify::New();
 
         EAssertR(Args.Length() >= 1, "SearchPoint: expects 1 argument!");
         EAssertR(Args[0]->IsObject(), "SearchPoint: argument 0 should be an object!");
@@ -256,15 +256,15 @@ TNodeJsSearchPoint* TNodeJsSearchPoint::NewFromArgs(const v8::FunctionCallbackIn
 
         Notify->OnNotify(TNotifyType::ntInfo, "Parsing arguments ...");
 
-        const TStr DmozFilePath = ArgJson->GetObjStr("dmozPath");
+        /* const TStr DmozFilePath = ArgJson->GetObjStr("dmozPath"); */
         const int RndSeed = ArgJson->GetObjInt("seed", 0);
         const int PerPage = ArgJson->GetObjInt("perPage", 10);
 
         TClustUtilH ClustUtilsH;
         ClustUtilsH.AddDat(DEFAULT_CLUST, new TSpDPMeansClustUtils(RndSeed, Notify));
-        ClustUtilsH.AddDat("dmoz", new TSpDmozClustUtils(DmozFilePath));
+        /* ClustUtilsH.AddDat("dmoz", new TSpDmozClustUtils(DmozFilePath)); */
 
-        return new TNodeJsSearchPoint(new TSpSearchPointImpl(ClustUtilsH, DEFAULT_CLUST, PerPage));
+        return new TNodeJsSearchPoint(new TSpSearchPointImpl(ClustUtilsH, DEFAULT_CLUST, PerPage, Notify));
     } catch (const PExcept& Except) {
         TNodeJsUtil::ThrowJsException(Isolate, Except);
         return nullptr;

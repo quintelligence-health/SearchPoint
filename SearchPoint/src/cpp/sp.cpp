@@ -2,25 +2,6 @@
 
 using namespace TSp;
 
-//const int TSpAbstractServer::NResultsDefault = 200;
-//const int TSpAbstractServer::NResultsMin = 200;
-//
-//const int TSpAbstractServer::MaxClusterRadius = 35;
-//const int TSpAbstractServer::MinClusterRadius = 8;
-//
-//const TStr TSpAbstractServer::QueryIDAttrName = "qid";
-//const TStr TSpAbstractServer::QueryAttrName = "q";
-//const TStr TSpAbstractServer::ClusteringUtilsAttrName = "c";
-//const TStr TSpAbstractServer::NResultsAttrName = "n";
-//const TStr TSpAbstractServer::SummaryPAttrName = "sum";
-//
-//const TStr TSpDemoSrv::QueryTargetStr = "${query}";
-//const TStr TSpDemoSrv::TitleTargetStr = "${title}";
-//const TStr TSpDemoSrv::ClusteringTargetStr = "${clustering}";
-//const TStr TSpDemoSrv::QueryIDTargetStr = "${queryID}";
-//const TStr TSpDemoSrv::NResultsTargetStr = "${nresults}";
-
-
 const double TSpSearchPoint::MaxClusterX = 1.0;
 const double TSpSearchPoint::MaxClusterY = 1.0;
 
@@ -431,7 +412,6 @@ void TSpDPMeansClustUtils::CalcClusters(const TSpItemV& ItemV,
     PBowSpV AllSpV = TBowClust::GetConceptSpV(BowDocWgtBs, BowSim, AllDIdV);
     ClustSpVV.Add(AllSpV);
 
-    PNotify Notify = new TNotify();
     PSVMTrainSet ClustSet = TBowDocBs2TrainSet::NewBowNoCat(ClustSpVV);
 	
     TIntV BestIdV;
