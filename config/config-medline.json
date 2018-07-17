@@ -1,9 +1,9 @@
 {
     "sp": {
-        "dmozPath": "/home/lstopar/workspace/JSI/searchpoint/DMoz.dat"
+        "dmozPath": "/home/midas/storage/project-data/SearchPoint/DMoz.dat"
     },
     "source": {
-        "path": "./src/sources/medline.js",
+        "path": "./sources/medline.js",
         "config": {
             "host": "localhost",
             "port": 9210,
@@ -15,15 +15,11 @@
         {
             "type": "stdout",
             "level": "debug"
-        },
-        {
-            "type": "file",
-            "file": "/home/lstopar/workspace/JSI/demos/logs/sp.log",
-            "level": "debug"
         }
     ],
     "server": {
-        "port": 8989
+        "port": 8080,
+        "sessionTimeout": 360000000
     },
     "modulePath": "../SearchPointCpp/"
 }
