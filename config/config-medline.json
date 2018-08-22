@@ -3,9 +3,9 @@
         "dmozPath": "/home/lstopar/workspace/JSI/searchpoint/DMoz.dat"
     },
     "source": {
-        "path": "./src/sources/medline.js",
+        "path": "./sources/medline.js",
         "config": {
-            "host": "localhost",
+            "host": "marquis.ijs.si",
             "port": 9210,
             "username": "elastic",
             "password": "helsinkidemo"
@@ -23,7 +23,8 @@
         }
     ],
     "server": {
-        "port": 8989
+        "port": 8989,
+        "sessionTimeout": 360000000
     },
     "modulePath": "../SearchPointCpp/"
 }

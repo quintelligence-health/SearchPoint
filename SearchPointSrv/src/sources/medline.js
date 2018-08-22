@@ -1,4 +1,5 @@
-let syncreq = require('sync-request');
+let request = require('request');
+// let syncreq = require('sync-request');
 
 class MedlineDataSource {
     constructor(opts) {
@@ -13,7 +14,7 @@ class MedlineDataSource {
         self._password = config.password;
     }
 
-    fetchData(query, limit) {
+    fetchData(query, limit, callback) {
         let self = this;
         let log = self._log;
 
@@ -27,17 +28,28 @@ class MedlineDataSource {
             if (log.debug())
                 log.debug('Fetching URL: ' + url);
 
-            let resp = syncreq('GET', url);
+            request(url, function (e, response, body) {
+                if (e != null) return callback(e);
 
-            if (resp.statusCode != 200) {
-                log.warn('Received non-OK status code: %d', resp.statusCode);
-                log.warn('Response:\n%s', resp.body.toString());
-            }
+                let status = response.statusCode;
+                if (status < 200 || 300 <= status) {
+                    return callback(new Error('Status code: ' + status));
+                }
 
-            return self._parseResp(resp.getBody());
+                let parsed = self._parseResp(body);
+
+//                 return self._parseResp(resp.getBody());
+                callback(undefined, parsed);
+            })
+            // let resp = syncreq('GET', url);
+
+            // if (resp.statusCode != 200) {
+            //     log.warn('Received non-OK status code: %d', resp.statusCode);
+            //     log.warn('Response:\n%s', resp.body.toString());
+            // }
         } catch (e) {
             log.error(e, 'Failed to execute query, returning NULL!');
-            return [];
+            callback(undefined, []);
         }
     }
 
@@ -75,13 +87,16 @@ class MedlineDataSource {
             result.push(transformed);
         }
 
+        if (log.debug())
+            log.debug('response parsed');
+
         return result;
     }
 }
 
 module.exports = exports = function (opts) {
     let source = new MedlineDataSource(opts);
-    return function (query, limit) {
-        return source.fetchData(query, limit);
+    return function (query, limit, callback) {
+        return source.fetchData(query, limit, callback);
     }
 }
