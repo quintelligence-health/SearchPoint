@@ -1,12 +1,12 @@
 {
     "sp": {
-        "dmozPath": "/home/lstopar/workspace/JSI/searchpoint/DMoz.dat"
+        "dmozPath": "/home/midas/storage/project-data/SearchPoint/DMoz.dat"
     },
     "source": {
         "path": "./sources/medline.js",
         "config": {
-            "host": "marquis.ijs.si",
-            "port": 9210,
+            "host": "localhost",
+            "port": 9200,
             "username": "elastic",
             "password": "helsinkidemo"
         }
@@ -14,12 +14,12 @@
     "logs": [
         {
             "type": "stdout",
-            "level": "debug"
+            "level": "info"
         },
         {
             "type": "file",
-            "file": "/home/lstopar/workspace/JSI/demos/logs/sp.log",
-            "level": "debug"
+            "file": "/home/midas/logs/searchpoint.log",
+            "level": "info"
         }
     ],
     "server": {

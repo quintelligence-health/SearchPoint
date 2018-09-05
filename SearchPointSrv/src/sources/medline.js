@@ -23,7 +23,7 @@ class MedlineDataSource {
                 self._password + '@' +
                 self._host + ':' +
                 self._port +
-                '/pubmedarticleset008/_search?q=' + query + '&from=0&size=' + limit;
+                '/pubmedarticleset001/_search?q=' + query + '&from=0&size=' + limit;
 
             if (log.debug())
                 log.debug('Fetching URL: ' + url);
