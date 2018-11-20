@@ -47,23 +47,23 @@ module.exports = exports = function (opts) {
         if (executorH.has(sessionId)) { executorH.delete(sessionId); }
     })
 
-    app.use(session({
-        store: store,
-        secret: randomstring.generate({
-            length: 12,
-            charset: 'alphabetic'
-        }),
-        cookie: {
-            maxAge: timeout
-        },
-        resave: false,
-        saveUninitialized: true
-    }))
+    // app.use(session({
+    //     store: store,
+    //     secret: randomstring.generate({
+    //         length: 12,
+    //         charset: 'alphabetic'
+    //     }),
+    //     cookie: {
+    //         maxAge: timeout
+    //     },
+    //     resave: false,
+    //     saveUninitialized: true
+    // }))
 
     function initRestApi() {
         app.get(API_PATH + '/query', function (req, res) {
             try {
-                let sessionId = req.sessionID;
+                let sessionId = (new Date().getTime() + '-' + Math.random()).replace('.', '');
                 let query = req.query[QUERY_PARAM];//encodeURI(req.query[QUERY_PARAM]);
                 let clustKey = req.query[CLUST_KEY_PARAM];
                 let limit = LIMIT_PARAM in req.query ? parseInt(req.query[LIMIT_PARAM]) : DEFAULT_LIMIT;
@@ -109,7 +109,10 @@ module.exports = exports = function (opts) {
                         if (log.debug())
                             log.debug('Done!');
 
-                        res.send(result[1]);
+                        let spResult = result[1];
+                        spResult.queryId = sessionId;
+
+                        res.send(spResult);
                         res.end();
                         done();
                     })
@@ -124,10 +127,15 @@ module.exports = exports = function (opts) {
 
         app.get(API_PATH + '/rank', function (req, res) {
             try {
-                let sessionId = req.sessionID;
+                console.log('req.query: ' + JSON.stringify(req.query));
                 let queryId = req.query[QUERY_ID_PARAM];
                 let page = parseInt(req.query[PAGE_PARAM]);
-                let pos = req.query[POSITIONS_PARAM][0];
+                let x = req.query.x;
+                let y = req.query.y;
+
+                let pos = { x: x, y: y };
+
+                let sessionId = queryId;
 
                 if (log.trace())
                     log.trace('Ranking: queryId: %s, page: %d, pos: %s', queryId, page, JSON.stringify(pos));
@@ -149,9 +157,10 @@ module.exports = exports = function (opts) {
 
         app.get(API_PATH + '/keywords', function (req, res) {
             try {
-                let sessionId = req.sessionID;
                 let x = parseFloat(req.query[COORD_X_PARAM]);
                 let y = parseFloat(req.query[COORD_Y_PARAM]);
+                let queryId = req.query[QUERY_ID_PARAM];
+                let sessionId = queryId;
 
                 if (log.trace())
                     log.trace('Fetching keywords queryId: %s, x: %d, y: %d ...', x, y);

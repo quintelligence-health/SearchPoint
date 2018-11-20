@@ -1,0 +1,30 @@
+{
+    "sp": {
+        "dmozPath": "/home/midas/storage/project-data/SearchPoint/DMoz.dat"
+    },
+    "source": {
+        "path": "./sources/medline.js",
+        "config": {
+            "host": "localhost",
+            "port": 9200,
+            "username": "elastic",
+            "password": "helsinkidemo"
+        }
+    },
+    "logs": [
+        {
+            "type": "stdout",
+            "level": "debug"
+        },
+        {
+            "type": "file",
+            "file": "/home/midas/logs/searchpoint.log",
+            "level": "info"
+        }
+    ],
+    "server": {
+        "port": 8990,
+        "sessionTimeout": 360000000
+    },
+    "modulePath": "../SearchPointCpp/"
+}

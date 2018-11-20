@@ -1,5 +1,8 @@
 node_modules/
 
+# build directory
+/build
+
 # VIM files
 .vimrc
 .jshintrc

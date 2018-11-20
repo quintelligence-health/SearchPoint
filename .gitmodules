@@ -1,3 +1,3 @@
 [submodule "qminer"]
 	path = qminer
-	url = git@github.com:lstopar/qminer.git
+	url = https://github.com/lstopar/qminer.git
