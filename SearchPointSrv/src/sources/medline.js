@@ -23,7 +23,7 @@ class MedlineDataSource {
                 self._password + '@' +
                 self._host + ':' +
                 self._port +
-                '/pubmedarticleset001/_search?q=' + query + '&from=0&size=' + limit;
+                '/pubmedarticleset019/_search?q=' + query + '&from=0&size=' + limit;
 
             if (log.debug())
                 log.debug('Fetching URL: ' + url);
@@ -33,7 +33,7 @@ class MedlineDataSource {
 
                 let status = response.statusCode;
                 if (status < 200 || 300 <= status) {
-                    return callback(new Error('Status code: ' + status));
+                    return callback(new Error('Status code: ' + status + ' from URL: ' + url));
                 }
 
                 let parsed = self._parseResp(body);

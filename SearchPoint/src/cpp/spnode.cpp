@@ -167,7 +167,7 @@ void TNodeJsSpResult::getByIndexes(const v8::FunctionCallbackInfo<v8::Value>& Ar
         ItemJson->AddToObj("description", THtmlLx::GetEscapedStr(Item.Description));
         ItemJson->AddToObj("displayURL", THtmlLx::GetEscapedStr(Item.DisplayUrl));
         ItemJson->AddToObj("URL", THtmlLx::GetEscapedStr(Item.Url));
-        ItemJson->AddToObj("rank", ItemN);
+        ItemJson->AddToObj("rank", ItemN+1);
 
         JsonItemV->AddToArr(ItemJson);
     }
