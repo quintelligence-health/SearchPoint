@@ -182,14 +182,14 @@ module.exports = exports = function (opts) {
 
 
     //New Portal
-    var express = require('express');
-    app = express();
+    //var express = require('express');
+    //var ßapp = express();
     
     //setting middleware
 
-    app.use(express.static(_dirname + 'public')); //serving resources from public folder
+    //app.use(express.static(_dirname + 'public')); //serving resources from public folder
     
-    server = app.listen(5000);
+    //var server = app.listen(5000);
 
     
 
