@@ -175,19 +175,21 @@ module.exports = exports = function (opts) {
     //serve static directories on the UI path
     app.use('/', express.static(path.join(__dirname, '../ui')));
 
+    // start server
+    server = app.listen(port);
+
+
+    //New Portal
     var express = require('express');
-    //var app = express();
+    var appm = express();
     
     //setting middleware
 
-    app.use(express.static(_dirname + 'public')); //serving resources from public folder
+    appm.use(express.static(_dirname + 'public')); //serving resources from public folder
     
-    //var server = app.listen(5000);
+    var serverm = appm.listen(5000);
 
     initRestApi();
-
-    // start server
-    server = app.listen(port);
 
     log.info('================================================');
     log.info('Server running at http://localhost:%d', port);
