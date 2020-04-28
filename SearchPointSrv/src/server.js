@@ -177,19 +177,21 @@ module.exports = exports = function (opts) {
 
     // start server
     server = app.listen(port);
+    
+    initRestApi();
 
 
     //New Portal
     var express = require('express');
-    var appm = express();
+    app = express();
     
     //setting middleware
 
-    appm.use(express.static(_dirname + 'public')); //serving resources from public folder
+    app.use(express.static(_dirname + 'public')); //serving resources from public folder
     
-    var serverm = appm.listen(5000);
+    server = app.listen(5000);
 
-    initRestApi();
+    
 
     log.info('================================================');
     log.info('Server running at http://localhost:%d', port);
