@@ -182,7 +182,7 @@ module.exports = exports = function (opts) {
 
     app.use(express.static(_dirname + 'public')); //serving resources from public folder
     
-    var server = app.listen(5000);
+    //var server = app.listen(5000);
 
     initRestApi();
 
