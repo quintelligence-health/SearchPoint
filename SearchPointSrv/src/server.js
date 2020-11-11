@@ -8,6 +8,8 @@ let async = require('async');
 let MemoryStore = require('./util/memorystore');
 let utils = require('./util/utils');
 
+let cors = require('cors');
+
 let API_PATH = '/api';
 
 let QUERY_PARAM = 'q';
@@ -46,7 +48,7 @@ module.exports = exports = function (opts) {
         sp.removeData(sessionId);
         if (executorH.has(sessionId)) { executorH.delete(sessionId); }
     })
-
+    app.use(cors());
     app.use(session({
         store: store,
         secret: randomstring.generate({
