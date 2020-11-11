@@ -46,6 +46,7 @@ module.exports = exports = function (opts) {
         sp.removeData(sessionId);
         if (executorH.has(sessionId)) { executorH.delete(sessionId); }
     })
+
     app.use(session({
         store: store,
         secret: randomstring.generate({
