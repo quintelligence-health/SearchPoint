@@ -8,6 +8,8 @@ let async = require('async');
 let MemoryStore = require('./util/memorystore');
 let utils = require('./util/utils');
 
+let cors = require('cors');
+
 let API_PATH = '/api';
 
 let QUERY_PARAM = 'q';
