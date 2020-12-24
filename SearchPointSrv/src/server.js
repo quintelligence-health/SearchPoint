@@ -47,6 +47,8 @@ module.exports = exports = function (opts) {
         if (executorH.has(sessionId)) { executorH.delete(sessionId); }
     })
 
+    app.use(cors());
+
     app.use(session({
         store: store,
         secret: randomstring.generate({
