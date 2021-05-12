@@ -16,7 +16,7 @@
     "cors": "^2.8.5",
     "express": "^4.12.2",
     "express-session": "^1.15.6",
-    "mathjs": "^3.13.1",
+    "mathjs": "^7.5.1",
     "path": "^0.11.14",
     "randomstring": "^1.1.5",
     "sync-request": "^4.0.3"
