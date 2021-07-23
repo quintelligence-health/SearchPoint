@@ -1,0 +1,25 @@
+{
+    "sp": {
+        "dmozPath": "/home/midas/storage/project-data/SearchPoint/DMoz.dat"
+    },
+    "source": {
+        "path": "./sources/mag.js",
+        "config": {
+            "host": "localhost",
+            "port": 9200,
+            "username": "username",
+            "password": "password"
+        }
+    },
+    "logs": [
+        {
+            "type": "stdout",
+            "level": "debug"
+        }
+    ],
+    "server": {
+        "port": 3023,
+        "sessionTimeout": 360000000
+    },
+    "modulePath": "../SearchPointCpp/"
+}

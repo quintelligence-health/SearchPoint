@@ -36,7 +36,7 @@
                 'cflags': [ '-Wno-deprecated-declarations', '-fopenmp' ]
             }],
             ['OS == "win"', {
-                'msbuild_toolset': 'v120',
+                'msbuild_toolset': 'v142',
                 'msvs_settings': {
                     'VCCLCompilerTool': {
                         #'RuntimeTypeInfo': 'true',      # /GR  : this should work but doesn't get picked up
