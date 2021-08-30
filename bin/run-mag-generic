@@ -1,0 +1,11 @@
+#!/bin/bash
+
+curr_dir=`pwd`
+cd ..
+
+while true; do
+    node SearchPointSrv/src/main.js config/config-mag-generic.json
+    sleep 1
+done
+
+cd $curr_dir
