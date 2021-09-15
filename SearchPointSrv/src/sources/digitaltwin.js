@@ -29,6 +29,8 @@ class MedlineDataSource {
             self._port = "";
         }
         let resource=query.resource;
+        let entity=query.entity;
+        let entityType=query.entityType;
         let corpusInfo = this.config.resourceInfo.corpusInfo[resource];
         let dateRangeInfo = this.config.resourceInfo.dateRange[resource];
         let range = [dateRangeInfo[0], dateRangeInfo[1]];
@@ -43,8 +45,12 @@ class MedlineDataSource {
                 range[1] = en;
             }
         }
+        let fieldKeyword = {};
+        fieldKeyword[entityType + ".keyword"] = {
+            "value": entity
+        }
         const result = await this.client.search({
-            index: corpusInfo.index,
+            index: corpusInfo.indices[entityType],
             body: {
                 "size": 20,
                 "query": {
@@ -61,11 +67,7 @@ class MedlineDataSource {
                                         }
                                     },
                                     {
-                                        "term": {
-                                            "Topic.keyword": {
-                                                "value": query.topic
-                                            }
-                                        },
+                                        "term": fieldKeyword
                                     }
                                 ]
                             }

@@ -29,11 +29,18 @@ class MedlineDataSource {
         if (self._host !== "localhost") {
             self._port = "";
         }
-        let dateRangeInfo =  this.config.dateRange;
+        let textField = query.textField || "abstract";
+        let dateField = query.dateField || "Date";
+        let urlField=query.urlField || "paperId";
+        let urlPrefix = query.urlPrefix || 'https://academic.microsoft.com/paper/';
+        let textSearch = {};
+        textSearch[textField] = {"value": query.keyword};
+
+        let dateRangeInfo = this.config.dateRange;
         let range = [dateRangeInfo[0], dateRangeInfo[1]];
         if (query.year) {
-            let st = query.year.start + "-01-01";
-            let en = query.year.end + "-12-31";
+            let st = query.year.start;
+            let en = query.year.end;
             range = [st, en];
             if (range[0] < st) {
                 range[0] = st;
@@ -42,22 +49,25 @@ class MedlineDataSource {
                 range[1] = en;
             }
         }
+        let dateRange = {};
+        dateRange[dateField] = {
+            "gte": range[0],
+            "lte": range[1]
+        }
         const result = await this.client.search({
             index: query.index,
             body: {
                 "size": limit,
+                "_source": {
+                    "exclude": query.excludeFields || []
+                },
                 "query": {
                     "bool": {
                         "filter": {
                             "bool": {
                                 "must": [
                                     {
-                                        "range": {
-                                            "Date": {
-                                                "gte": range[0],
-                                                "lte": range[1]
-                                            }
-                                        }
+                                        "range": dateRange
                                     },
                                     {
                                         "bool": {
@@ -70,11 +80,7 @@ class MedlineDataSource {
                                                     }
                                                 },
                                                 {
-                                                    "term": {
-                                                        "abstract": {
-                                                            "value": query.keyword
-                                                        }
-                                                    }
+                                                    "term": textSearch
                                                 }
                                             ]
                                         }
@@ -88,13 +94,13 @@ class MedlineDataSource {
         });
 
         let res = result.body.hits.hits.filter((hit) => {
-            return hit._source.Date;
+            return hit._source[dateField];
         }).map((hit) => {
             let obj = {
-                url: 'https://academic.microsoft.com/paper/' + hit._source["paperId"],
-                displayUrl: 'https://academic.microsoft.com/paper/' + hit._source["paperId"],
+                url: urlPrefix + hit._source[urlField],
+                displayUrl: urlPrefix + hit._source[urlField],
                 title: hit._source["title"] || "",
-                description: hit._source["abstract"] || "",
+                description: (hit._source[textField] || "").slice(500),
             };
             return obj;
         });
