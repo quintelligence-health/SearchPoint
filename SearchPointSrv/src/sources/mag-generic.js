@@ -35,25 +35,34 @@ class MedlineDataSource {
         let urlPrefix = query.urlPrefix || 'https://academic.microsoft.com/paper/';
         let textSearch = {};
         textSearch[textField] = {"value": query.keyword};
-
-        let dateRangeInfo = this.config.dateRange;
-        let range = [dateRangeInfo[0], dateRangeInfo[1]];
-        if (query.year) {
-            let st = query.year.start;
-            let en = query.year.end;
-            range = [st, en];
-            if (range[0] < st) {
-                range[0] = st;
+        const withDate= query.date!==undefined;
+        let dateRange={};
+        if (withDate){
+            dateRange[dateField] = {
+                "gte": query.date.start,
+                "lte": query.date.end
             }
-            if (range[1] > en) {
-                range[1] = en;
+            dateRange={
+                "range": dateRange
+            };
+        }
+        const keywordFilter={
+            "bool": {
+                "should": [
+                    {
+                        "term": {
+                            "title": {
+                                "value": query.keyword
+                            }
+                        }
+                    },
+                    {
+                        "term": textSearch
+                    }
+                ]
             }
-        }
-        let dateRange = {};
-        dateRange[dateField] = {
-            "gte": range[0],
-            "lte": range[1]
-        }
+        };
+        const totalFilter=withDate?[dateRange,keywordFilter]:[keywordFilter];
         const result = await this.client.search({
             index: query.index,
             body: {
@@ -65,27 +74,7 @@ class MedlineDataSource {
                     "bool": {
                         "filter": {
                             "bool": {
-                                "must": [
-                                    {
-                                        "range": dateRange
-                                    },
-                                    {
-                                        "bool": {
-                                            "should": [
-                                                {
-                                                    "term": {
-                                                        "title": {
-                                                            "value": query.keyword
-                                                        }
-                                                    }
-                                                },
-                                                {
-                                                    "term": textSearch
-                                                }
-                                            ]
-                                        }
-                                    }
-                                ]
+                                "must": totalFilter
                             }
                         }
                     }
@@ -100,7 +89,7 @@ class MedlineDataSource {
                 url: urlPrefix + hit._source[urlField],
                 displayUrl: urlPrefix + hit._source[urlField],
                 title: hit._source["title"] || "",
-                description: (hit._source[textField] || "").slice(500),
+                description: (hit._source[textField] || "").slice(0,500),
             };
             return obj;
         });
