@@ -18,10 +18,16 @@ class MedlineDataSource {
     let log = self._log;
 
     try {
+      let host_and_port;
+      if (self._host !== "localhost") {
+        host_and_port=self._host;
+      }else{
+        host_and_port= self._host + ':' + self._port;
+      }
+
       let url = 'http://' + self._username + ':' +
         self._password + '@' +
-        self._host + ':' +
-        self._port +
+        host_and_port+
         '/mag-pipeline-naiades/_search?q=' + query + '&from=0&size=' + limit;
 
       if (log.debug())

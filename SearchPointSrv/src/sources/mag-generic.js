@@ -29,12 +29,16 @@ class MedlineDataSource {
         if (self._host !== "localhost") {
             self._port = "";
         }
+        let additionalFilters;
+        if (query.additionalFilters){
+            additionalFilters=query.additionalFilters;
+        }
         let textField = query.textField || "abstract";
         let dateField = query.dateField || "Date";
         let urlField=query.urlField || "paperId";
         let urlPrefix = query.urlPrefix || 'https://academic.microsoft.com/paper/';
         let textSearch = {};
-        textSearch[textField] = {"value": query.keyword};
+        textSearch[textField] = {"query": query.keyword};
         const withDate= query.date!==undefined;
         let dateRange={};
         if (withDate){
@@ -50,19 +54,22 @@ class MedlineDataSource {
             "bool": {
                 "should": [
                     {
-                        "term": {
+                        "match": {
                             "title": {
-                                "value": query.keyword
+                                "query": query.keyword
                             }
                         }
                     },
                     {
-                        "term": textSearch
+                        "match": textSearch
                     }
                 ]
             }
         };
-        const totalFilter=withDate?[dateRange,keywordFilter]:[keywordFilter];
+        let totalFilter=withDate?[dateRange,keywordFilter]:[keywordFilter];
+        if (additionalFilters){
+            totalFilter.push(...additionalFilters)
+        }
         const result = await this.client.search({
             index: query.index,
             body: {
