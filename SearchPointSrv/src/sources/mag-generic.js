@@ -30,44 +30,49 @@ class MedlineDataSource {
             self._port = "";
         }
         let additionalFilters;
-        if (query.additionalFilters){
-            additionalFilters=query.additionalFilters;
+        if (query.additionalFilters) {
+            additionalFilters = query.additionalFilters;
         }
         let textField = query.textField || "abstract";
+        let titleField = query.titleField || "title";
         let dateField = query.dateField || "Date";
-        let urlField=query.urlField || "paperId";
+        let urlField = query.urlField || "paperId";
         let urlPrefix = query.urlPrefix || 'https://academic.microsoft.com/paper/';
-        let textSearch = {};
-        textSearch[textField] = {"query": query.keyword};
-        const withDate= query.date!==undefined;
-        let dateRange={};
-        if (withDate){
+        let topicsField = query.topicsField || "Topics";
+        const withDate = query.date !== undefined;
+        const withTopics = query.topicsField !== undefined;
+        let dateRange = {};
+        if (withDate) {
             dateRange[dateField] = {
                 "gte": query.date.start,
                 "lte": query.date.end
             }
-            dateRange={
+            dateRange = {
                 "range": dateRange
             };
         }
-        const keywordFilter={
-            "bool": {
-                "should": [
-                    {
-                        "match": {
-                            "title": {
-                                "query": query.keyword
-                            }
-                        }
-                    },
-                    {
-                        "match": textSearch
-                    }
-                ]
+        /*
+        let topicsFilter={};
+        if (withTopics){
+            topicsFilter={
+                "term":{
+
+                }
+            };
+            topicsFilter[topicsField+".keyword"]=query.keyword;
+        }*/
+        const keywordFilter = {
+            "multi_match": {
+                "query": query.keyword,
+                "fields": [titleField, textField]
             }
         };
-        let totalFilter=withDate?[dateRange,keywordFilter]:[keywordFilter];
-        if (additionalFilters){
+        if (withTopics) {
+            keywordFilter.multi_match.fields.push(topicsField);
+        }
+        let totalFilter = withDate ? [dateRange, keywordFilter] : [keywordFilter];
+
+        if (additionalFilters) {
             totalFilter.push(...additionalFilters)
         }
         const result = await this.client.search({
@@ -95,37 +100,13 @@ class MedlineDataSource {
             let obj = {
                 url: urlPrefix + hit._source[urlField],
                 displayUrl: urlPrefix + hit._source[urlField],
-                title: hit._source["title"] || "",
-                description: (hit._source[textField] || "").slice(0,500),
+                title: hit._source[titleField] || "",
+                description: (hit._source[textField] || "").slice(0, 500),
             };
             return obj;
         });
         callback(null, res);
         return res;
-        try {
-            let url = 'http://' + self._username + ':' +
-                self._password + '@' +
-                self._host + ':' +
-                self._port +
-                '/' + index + '/_search?q=' + query + '&from=0&size=' + limit;
-
-            if (log.debug())
-                log.debug('Fetching URL: ' + url);
-            console.log("url request", url);
-            let resp = syncreq('GET', url);
-
-            if (resp.statusCode !== 200) {
-                log.warn('Received non-OK status code: %d', resp.statusCode);
-                log.warn('Response:\n%s', resp.body.toString());
-            }
-            let res = self._parseResp(resp.getBody());
-            callback(null, res);
-            return res;
-        } catch (e) {
-            log.error(e, 'Failed to execute query, returning NULL!');
-            callback(e, null);
-            return [];
-        }
     }
 
     _parseResp(dataStr) {
