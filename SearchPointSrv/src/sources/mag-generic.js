@@ -41,6 +41,7 @@ class MedlineDataSource {
         let topicsField = query.topicsField || "Topics";
         const withDate = query.date !== undefined;
         const withTopics = query.topicsField !== undefined;
+        const matchPhrase = query.matchPhrase === "true";
         let dateRange = {};
         if (withDate) {
             dateRange[dateField] = {
@@ -61,14 +62,38 @@ class MedlineDataSource {
             };
             topicsFilter[topicsField+".keyword"]=query.keyword;
         }*/
-        const keywordFilter = {
-            "multi_match": {
-                "query": query.keyword,
-                "fields": [titleField, textField]
+        let keywordFilter;
+        if (!matchPhrase) {
+            keywordFilter = {
+                "multi_match": {
+                    "query": query.keyword,
+                    "fields": [titleField, textField]
+                }
+            };
+            if (withTopics) {
+                keywordFilter.multi_match.fields.push(topicsField);
             }
-        };
-        if (withTopics) {
-            keywordFilter.multi_match.fields.push(topicsField);
+        } else {
+            keywordFilter = {
+                bool: {
+                    should: [
+                        {
+                            match_phrase: {}
+                        },
+                        {
+                            match_phrase: {}
+                        }
+                    ]
+                }
+            }
+            keywordFilter.bool.should[0].match_phrase[titleField] = query.keyword;
+            keywordFilter.bool.should[1].match_phrase[titleField] = query.keyword;
+            if (withTopics) {
+                keywordFilter.bool.should.append({
+                    match: {}
+                })
+                keywordFilter.bool.should[2].match[topicsField] = query.keyword;
+            }
         }
         let totalFilter = withDate ? [dateRange, keywordFilter] : [keywordFilter];
 
