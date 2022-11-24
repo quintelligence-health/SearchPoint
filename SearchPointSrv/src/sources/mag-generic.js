@@ -87,7 +87,7 @@ class MedlineDataSource {
                 }
             }
             keywordFilter.bool.should[0].match_phrase[titleField] = query.keyword;
-            keywordFilter.bool.should[1].match_phrase[titleField] = query.keyword;
+            keywordFilter.bool.should[1].match_phrase[textField] = query.keyword;
             if (withTopics) {
                 keywordFilter.bool.should.append({
                     match: {}
