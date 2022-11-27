@@ -129,6 +129,8 @@ class MedlineDataSource {
                 description: (hit._source[textField] || "").slice(0, 500),
             };
             return obj;
+        }).filter((hit) => {
+            return hit.url !== urlPrefix + 'null';
         });
         callback(null, res);
         return res;
