@@ -1,0 +1,88 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9BVM3TVD7J"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9BVM3TVD7J');
+    </script>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>SearchPoint</title>
+
+    <link type="text/css" rel="Stylesheet" href="SearchPoint/search.point.visualization.css" />
+
+    <script type="application/javascript" src="/external/kinetic-v3.8.2.js"></script>
+    <script type="application/javascript" src="/external/jquery-1.10.2.js"></script>
+    <script type="application/javascript" src="/external/jquery-ui-1.10.4.custom.min.js"></script>
+    <script type="application/javascript" src="/external/jquery.getUrlParam.js"></script>>
+
+</head>
+<body>
+<header>
+    <table id="tbl-search">
+        <tbody>
+        <tr>
+            <td>
+                <a href="index.html" title="Go to SearchPoint Home">
+                    <img src="/assets/images/searchpoint/logo.jpg" height="52" width="auto" style="border: none" alt="(no image)" />
+                </a>
+            </td>
+            <td>
+                <input id="q" name="q" type="text" value="" maxlength="2048" size="41" />
+            </td>
+            <td>
+                <select id="source" class="option">
+                    <option value="MAG" selected>Microsoft academic graph</option>
+                    <option value="PUBMED">Public medline</option>
+                </select>
+            </td>
+            <td id="start-year-field" >
+                <label>Start year
+                    <input id="yearStart" name="yearStart" type="number" value="1900" min="1900" max="2021" class="option"/>
+                </label>
+            </td>
+            <td id="end-year-field">
+                <label>End year
+                    <input id="yearEnd" name="yearEnd" type="number" value="2021" min="1900" max="2021" class="option"/>
+                </label>
+            </td>
+            <td id="publication-type-field">
+                <select id="publication-type" class="option">
+                    <option value="Publication" selected>Publication</option>
+                    <option value="Patent">Patent</option>
+                </select>
+            </td>
+            <td>
+                <input id="search-btn" name="search" id="kmeans" value="Search Topics" type="button" />
+                <input type="hidden" id="clustering_fld" name="c" value="" />
+                <input type="hidden" id="s" name="s" value="" disabled="disabled" />
+            </td>
+
+        </tr>
+        </tbody>
+    </table>
+    <div id="advanced" style="display: none;">
+            <span class="form-entry">
+                <label for="spn-nresults">Number of search results:</label>
+                <input id="spn-nresults" type="text" min="200" step="50" value="200" />
+            </span>
+    </div>
+    <div id="advanced-toggle"></div>
+</header>
+<section id="data_section">
+    <section id="data"></section>
+    <footer>
+        <br />
+        <nav id="nav"></nav>
+    </footer>
+</section>
+<aside>
+    <section id="body_cluster_canvas" onselectstart="return false;"></section>
+</aside>
+<script type="application/javascript" src="SearchPoint/search.point.visualization.js"></script>
+</body>
+</html>

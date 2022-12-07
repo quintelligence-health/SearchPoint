@@ -1,0 +1,157 @@
+body, td, div, .p, a {
+    font-family: arial,sans-serif;
+}
+
+a {
+    color: #0000CC;
+    text-decoration: underline;
+}
+
+a:hover {
+    cursor: pointer;
+}
+
+a:visited {
+    color: #551A8B;
+}
+
+#tbl-search {
+	width: 710px;
+}
+
+#tbl-search, tr, dt {
+    text-align: center;
+}
+tr {
+    vertical-align: top;
+}
+td {
+    vertical-align: bottom;
+}
+
+#advanced {
+	width: 710px;
+	font-size: 10px;
+	padding: 10px;
+	padding-left: 70px;
+	
+	border: 2px solid #D6D6D6;
+	-webkit-border-radius: 10px;
+	-moz-border-radius: 10px;
+	border-radius: 10px;
+}
+#advanced input {
+	
+}
+
+#advanced-toggle {
+	width: 794px;
+	min-height: 30px;
+	
+	border: 0px solid white;
+	-webkit-border-radius: 10px;
+	-moz-border-radius: 10px;
+	border-radius: 10px;
+	
+	background-image: url('../images/down.png');
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 32px 32px;
+	
+	cursor: pointer;
+}
+
+#advanced-toggle:hover {
+	background-color: #F0F0F0;
+}
+
+#advanced-toggle:active {
+	background-color: lightgray;
+}
+
+#about {
+    text-align: center;
+}
+
+#center {
+    text-align: center;
+    padding: auto;
+}
+
+#center * {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.about {
+    font-size: 11px;
+}
+
+.item_title {
+    font-size: 16px;
+    font-weight: normal;
+    margin: 0px;
+}
+
+article {
+    margin: 1em 0 0 0;
+	font-family: arial, sans-serif; 
+}
+
+.description_table {
+    width: 34em;
+    border-width: 0px;
+    margin: 0px;
+    padding: 0px;
+    text-align: left;
+	font-size: 13px;
+}
+
+.url, .url:link {
+	font-size: 14px;
+    color: green;
+}
+
+aside {
+    float: left;
+}
+
+footer {
+    clear: both;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+footer * {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#data_section {
+    width: 410px;
+    float: left;
+}
+
+#cluster_canvas {
+    width: 400px;
+    height: 400px;
+}
+
+.loading {
+    background-image: url('../images/ajax-loader.gif');
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 300px;
+    height: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/*==================================
+ * NAVIGATION
+==================================*/
+
+#nav {
+    margin-bottom: 20px;
+}
