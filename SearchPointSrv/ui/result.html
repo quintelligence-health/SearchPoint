@@ -97,6 +97,21 @@
                     <td>
                         <input id="q" name="q" type="text" value="" maxlength="2048" size="41" />
                     </td>
+                         <td>
+                        <select id="source" class="option">
+                            <option value="Quintintelligence" selected>Quint</option>
+                            <option value="SDG">SDG</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select id="topic" class="option">
+                            <option value="media" selected>News</option>
+                            <option value="science">Science</option>
+                            <option value="science">Patents</option>
+                            <option value="policy">Policies</option>
+                            <option value="education">Education</option>
+                        </select>
+                    </td>
                     <td>
                         <input name="search" id="kmeans" value="Search Topics" type="button" onclick="service.fetchData(this.id, null);" />
                         <input type="hidden" id="clustering_fld" name="c" value="" />
@@ -123,5 +138,14 @@
     <aside>
         <section id="body_cluster_canvas" onselectstart="return false;"></section>
     </aside>
+<script>
+    $('#topic').css('display', "none");
+
+    $('#source').on('change', function () {
+    let val = $('#source option:selected').val();
+    let display = val === "SDG" ? "table-cell" : "none"
+    $('#topic').css('display', display);
+ })
+</script>
 </body>
 </html>

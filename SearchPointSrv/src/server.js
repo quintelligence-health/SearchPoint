@@ -18,6 +18,8 @@ let PAGE_PARAM = 'p';
 let COORD_X_PARAM = 'x';
 let COORD_Y_PARAM = 'y';
 let POSITIONS_PARAM = 'pos';
+let QUERY_SOURCE = 'source';
+let QUERY_TOPIC = 'topic';
 
 let DEFAULT_LIMIT = 200;
 
@@ -65,6 +67,8 @@ module.exports = exports = function (opts) {
                 let sessionId = req.sessionID;
                 let query = req.query[QUERY_PARAM];//encodeURI(req.query[QUERY_PARAM]);
                 let clustKey = req.query[CLUST_KEY_PARAM];
+                let source = req.query[QUERY_SOURCE];
+                let topic = req.query[QUERY_TOPIC];
                 let limit = LIMIT_PARAM in req.query ? parseInt(req.query[LIMIT_PARAM]) : DEFAULT_LIMIT;
 
                 if (isNaN(limit)) limit = DEFAULT_LIMIT;
@@ -85,7 +89,7 @@ module.exports = exports = function (opts) {
                     let items = null;
                     let tasks = [
                         function (xcb) {
-                            fetchFun(query, limit, function (e, _items) {
+                            fetchFun(query, source, topic, limit, function (e, _items) {
                                 if (e != null) return xcb(e);
                                 items = _items;
                                 xcb();

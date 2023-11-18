@@ -120,7 +120,9 @@ var DataService = function () {
     var that = {
         fetchData: function (clustering) {
             var query = $('#q').val();
-            var clusteringKey = (clustering == null || clustering == '') ? getClusteringKey() : clustering;
+			var source = $('#source option:selected').val();
+			var topic = source === 'SDG' ? $('#topic option:selected').val() : '';
+			var clusteringKey = (clustering == null || clustering == '') ? getClusteringKey() : clustering;
 			var nresults = getNResults();
 			
 			setClusteringKey(clusteringKey);
@@ -131,7 +133,7 @@ var DataService = function () {
             $.ajax({
                 type: "GET",
                 url: "api/query",
-                data: {q: query, c: clusteringKey, n: nresults},
+                data: {q: query, c: clusteringKey, n: nresults, source: source, topic:topic},
                 dataType: "json",
                 async: true,
                 success: function (data) {
@@ -1537,3 +1539,4 @@ function scalarProd(v1, v2) {
 function worldRankingDisabled() {
 	return $('#disable_world').attr('checked');
 }
+

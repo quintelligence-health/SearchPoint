@@ -14,16 +14,24 @@ class MedlineDataSource {
         self._password = config.password;
     }
 
-    fetchData(query, limit, callback) {
+    fetchData(query, source, topic, limit, callback) {
+        console.log(query,source, topic, limit, callback);
         let self = this;
         let log = self._log;
 
         try {
-            let url = 'http://' + self._username + ':' +
+            let url;
+
+            if (source !== 'SDG') {
+                url = 'http://' + self._username + ':' +
                 self._password + '@' +
                 self._host + ':' +
                 self._port +
                 '/pubmedarticleset019/_search?q=' + query + '&from=0&size=' + limit;
+            } else {
+                url = 'http://' + self._username + ':' + 'changeme' + '@' + self._host + ':' + '9202'
+                    + '/' + topic + '/_search?q=' + query + '&from=0&size=' + limit;
+            }
 
             if (log.debug())
                 log.debug('Fetching URL: ' + url);
@@ -67,10 +75,10 @@ class MedlineDataSource {
         for (let itemN = 0; itemN < items.length; itemN++) {
             let item = items[itemN];
 
-            let itemId = item._source.PMID;
-            let title = item._source.ArticleTitle;
-            let description = item._source.Abstract;
-            let itemUrl = 'https://www.ncbi.nlm.nih.gov/pubmed/' + itemId;
+            let itemId = item._source['PMID'] || item._source['uri'];
+            let title = item._source['ArticleTitle'] || item._source['title'];
+            let description = item._source.Abstract || item._source['body'];
+            let itemUrl = item._source['url'] || 'https://www.ncbi.nlm.nih.gov/pubmed/' + itemId;
 
             if (description == null) { description = title; }
 
@@ -96,7 +104,8 @@ class MedlineDataSource {
 
 module.exports = exports = function (opts) {
     let source = new MedlineDataSource(opts);
-    return function (query, limit, callback) {
-        return source.fetchData(query, limit, callback);
+    return function (query, sourceQuery, topic, limit, callback) {
+        return source.fetchData(query, sourceQuery, topic, limit, callback);
     }
 }
+
