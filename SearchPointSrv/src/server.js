@@ -55,7 +55,9 @@ module.exports = exports = function (opts) {
             charset: 'alphabetic'
         }),
         cookie: {
-            maxAge: timeout
+            maxAge: timeout,
+	        sameSite: 'none',
+            secure: true
         },
         resave: false,
         saveUninitialized: true

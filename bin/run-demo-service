@@ -1,0 +1,11 @@
+#!/bin/bash
+
+curr_dir=`pwd`
+cd ..
+
+while true; do
+    /home/midas/.nvm/versions/node/v8.11.3/bin/node SearchPointSrv/src/main.js config/config-medline.json
+    sleep 1
+done
+
+cd $curr_dir

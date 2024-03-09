@@ -21,3 +21,6 @@ Servers*
 *.a
 *.o
 *.so
+
+.idea/*
+bin/nohup.out
