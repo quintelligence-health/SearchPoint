@@ -116,6 +116,7 @@ var ListController = function () {
 var DataService = function () {
 	var pendingKwRequest = null;
 	var fetchingKws = false;
+	var queryId = null;
 
     var that = {
         fetchData: function (clustering) {
@@ -138,6 +139,7 @@ var DataService = function () {
                     document.title = query + ' - SearchPoint';
 
                     // update the items
+                    queryId = data.queryId;
                     items = data.items;
                     nItems = data.totalItems;
                     listCont.currPage = 0;
@@ -245,12 +247,14 @@ var DataService = function () {
                 positions.push(serverPos);
             }
 
-            var queryID = document.getElementById('s').value;
+            if (queryId == null) return;
+
+            var targetPos = positions[0];
 
             $.ajax({
                 type: "GET",
                 url: "api/rank",
-                data: { pos: positions, p: page },
+                data: { qid: queryId, x: targetPos.x, y: targetPos.y, p: page },
                 dataType: "json",
                 async: true,
                 success: function (data, textStatus, jqXHR) {
@@ -264,6 +268,7 @@ var DataService = function () {
 		
 		fetchKeywords: function (x, y, callback) {
 			if (getClusteringKey() != 'kmeans') return;
+			if (queryId == null) return;
 			
 			if (fetchingKws) {
 				pendingKwRequest = {x: x, y: y, callback: callback};
@@ -271,8 +276,6 @@ var DataService = function () {
 			}
 			
 			
-			var queryId = document.getElementById('s').value;
-		
 			var serverPos = stages[0].toServerCoords(x, y);
 		
 			fetchingKws = true;
